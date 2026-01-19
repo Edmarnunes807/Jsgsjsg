@@ -46,10 +46,21 @@
       color: #fff;
       cursor: pointer;
       transition: 0.3s;
+      margin-top: 10px;
     }
 
     .btn:hover {
       background: #203a43;
+    }
+
+    .input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+      margin-top: 10px;
+      box-sizing: border-box;
     }
 
     #scanner {
@@ -86,6 +97,16 @@
 
 <div class="container">
   <h1>📦 Scanner de Produtos</h1>
+
+  <input 
+    type="text" 
+    id="codigoManual" 
+    class="input"
+    placeholder="Digite o código de barras"
+    inputmode="numeric"
+  />
+
+  <button class="btn" onclick="buscarCodigoManual()">🔍 Buscar Código</button>
 
   <button class="btn" onclick="iniciarScanner()">📷 Abrir Scanner</button>
 
@@ -133,6 +154,15 @@
       scannerAtivo = false;
       buscarProduto(codigo);
     });
+  }
+
+  function buscarCodigoManual() {
+    const codigo = document.getElementById("codigoManual").value.trim();
+    if (!codigo) {
+      alert("Digite um código de barras válido");
+      return;
+    }
+    buscarProduto(codigo);
   }
 
   function buscarProduto(codigo) {
