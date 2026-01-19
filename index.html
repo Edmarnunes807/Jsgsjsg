@@ -20,13 +20,12 @@
     }
 
     .container {
-      background: #ffffff;
+      background: #fff;
       width: 100%;
       max-width: 420px;
       padding: 20px;
       border-radius: 18px;
       box-shadow: 0 15px 40px rgba(0,0,0,0.35);
-      animation: fadeIn 0.5s ease;
     }
 
     h1 {
@@ -41,7 +40,6 @@
       font-size: 16px;
       border-radius: 12px;
       border: 1px solid #ccc;
-      box-sizing: border-box;
       margin-bottom: 10px;
     }
 
@@ -67,6 +65,19 @@
       margin-top: 10px;
       border-radius: 12px;
       overflow: hidden;
+      position: relative;
+    }
+
+    /* Moldura visual de foco */
+    #scanner::after {
+      content: "";
+      position: absolute;
+      top: 30%;
+      left: 15%;
+      right: 15%;
+      bottom: 30%;
+      border: 2px dashed rgba(255,255,255,0.8);
+      pointer-events: none;
     }
 
     #scanner video {
@@ -93,15 +104,6 @@
       margin: 6px 0;
       font-size: 15px;
     }
-
-    .linha strong {
-      color: #000;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
   </style>
 </head>
 <body>
@@ -123,7 +125,7 @@
   <div id="scanner"></div>
 
   <div class="resultado" id="resultado">
-    <img id="imagemProduto" src="" alt="" style="display:none;">
+    <img id="imagemProduto" style="display:none;">
     <div class="linha"><strong>Código:</strong> <span id="codigo"></span></div>
     <div class="linha"><strong>Produto:</strong> <span id="nome"></span></div>
     <div class="linha"><strong>Marca:</strong> <span id="marca"></span></div>
@@ -132,85 +134,102 @@
 </div>
 
 <script>
-  let scannerAtivo = false;
+let scannerAtivo = false;
 
-  function iniciarScanner() {
-    if (scannerAtivo) return;
+function iniciarScanner() {
+  if (scannerAtivo) return;
 
-    document.getElementById("scanner").style.display = "block";
+  const scannerDiv = document.getElementById("scanner");
+  scannerDiv.style.display = "block";
 
-    Quagga.init({
-      inputStream: {
-        type: "LiveStream",
-        target: document.querySelector("#scanner"),
-        constraints: { facingMode: "environment" }
+  Quagga.init({
+    inputStream: {
+      type: "LiveStream",
+      target: scannerDiv,
+      constraints: {
+        facingMode: "environment",
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        advanced: [
+          { zoom: 2.0 },
+          { focusMode: "continuous" }
+        ]
       },
-      decoder: {
-        readers: ["ean_reader", "ean_8_reader", "upc_reader"]
+      area: {
+        top: "30%",
+        right: "15%",
+        left: "15%",
+        bottom: "30%"
       }
-    }, err => {
-      if (err) {
-        alert("Erro ao acessar a câmera");
-        return;
-      }
-      Quagga.start();
-      scannerAtivo = true;
-    });
-
-    Quagga.onDetected(data => {
-      const codigo = data.codeResult.code;
-      Quagga.stop();
-      scannerAtivo = false;
-      buscarProduto(codigo);
-    });
-  }
-
-  function buscarCodigoManual() {
-    const codigo = document.getElementById("codigoManual").value.trim();
-    if (!codigo) {
-      alert("Digite um código válido");
+    },
+    locator: {
+      patchSize: "medium",
+      halfSample: false
+    },
+    numOfWorkers: navigator.hardwareConcurrency || 4,
+    decoder: {
+      readers: ["ean_reader", "ean_8_reader", "upc_reader"]
+    },
+    locate: true
+  }, err => {
+    if (err) {
+      alert("Erro ao acessar a câmera");
       return;
     }
+    Quagga.start();
+    scannerAtivo = true;
+  });
+
+  Quagga.offDetected();
+  Quagga.onDetected(data => {
+    const codigo = data.codeResult.code;
+    Quagga.stop();
+    scannerAtivo = false;
     buscarProduto(codigo);
+  });
+}
+
+function buscarCodigoManual() {
+  const codigo = document.getElementById("codigoManual").value.trim();
+  if (!codigo) {
+    alert("Digite um código válido");
+    return;
   }
+  buscarProduto(codigo);
+}
 
-  function buscarProduto(codigo) {
-    fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)
-      .then(res => res.json())
-      .then(data => {
-        const resultado = document.getElementById("resultado");
-        const img = document.getElementById("imagemProduto");
+function buscarProduto(codigo) {
+  fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)
+    .then(res => res.json())
+    .then(data => {
+      const resultado = document.getElementById("resultado");
+      const img = document.getElementById("imagemProduto");
 
-        resultado.style.display = "block";
-        document.getElementById("codigo").innerText = codigo;
+      resultado.style.display = "block";
+      document.getElementById("codigo").innerText = codigo;
 
-        if (data.status !== 1) {
-          document.getElementById("nome").innerText = "Produto não encontrado";
-          document.getElementById("marca").innerText = "-";
-          document.getElementById("quantidade").innerText = "-";
-          img.style.display = "none";
-          return;
-        }
+      if (data.status !== 1) {
+        document.getElementById("nome").innerText = "Produto não encontrado";
+        document.getElementById("marca").innerText = "-";
+        document.getElementById("quantidade").innerText = "-";
+        img.style.display = "none";
+        return;
+      }
 
-        const p = data.product;
+      const p = data.product;
 
-        document.getElementById("nome").innerText =
-          p.product_name || "Não informado";
+      document.getElementById("nome").innerText = p.product_name || "Não informado";
+      document.getElementById("marca").innerText = p.brands || "Não informada";
+      document.getElementById("quantidade").innerText = p.quantity || "Não informada";
 
-        document.getElementById("marca").innerText =
-          p.brands || "Não informada";
-
-        document.getElementById("quantidade").innerText =
-          p.quantity || "Não informada";
-
-        if (p.image_front_url) {
-          img.src = p.image_front_url;
-          img.style.display = "block";
-        } else {
-          img.style.display = "none";
-        }
-      });
-  }
+      if (p.image_front_url) {
+        img.src = p.image_front_url;
+        img.style.display = "block";
+      } else {
+        img.style.display = "none";
+      }
+    });
+}
 </script>
 
 </body>
