@@ -1,70 +1,139 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Leitor de Código de Barras</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scanner de Código de Barras</title>
+
   <script src="https://unpkg.com/@ericblade/quagga2/dist/quagga.js"></script>
+
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
     }
-    #scanner {
+
+    .container {
+      background: #ffffff;
+      color: #333;
       width: 100%;
-      max-width: 400px;
-      margin: auto;
+      max-width: 420px;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+      animation: fadeIn 0.6s ease;
     }
+
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      border: none;
+      border-radius: 12px;
+      background: #2c5364;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      background: #203a43;
+    }
+
+    #scanner {
+      margin-top: 15px;
+      border-radius: 12px;
+      overflow: hidden;
+      display: none;
+    }
+
+    #scanner video {
+      width: 100%;
+      border-radius: 12px;
+    }
+
     .resultado {
-      background: #fff;
-      padding: 15px;
-      margin-top: 20px;
-      border-radius: 8px;
+      margin-top: 15px;
+      background: #f4f6f8;
+      padding: 12px;
+      border-radius: 12px;
+      display: none;
     }
+
     .label {
-      font-weight: bold;
+      font-weight: 600;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
 
-<h2>📷 Leitor de Código de Barras</h2>
+<div class="container">
+  <h1>📦 Scanner de Produtos</h1>
 
-<div id="scanner"></div>
+  <button class="btn" onclick="iniciarScanner()">📷 Abrir Scanner</button>
 
-<div class="resultado" id="resultado" style="display:none;">
-  <p><span class="label">Código:</span> <span id="codigo"></span></p>
-  <p><span class="label">Produto:</span> <span id="nome"></span></p>
-  <p><span class="label">Categoria:</span> <span id="categoria"></span></p>
-  <p><span class="label">Medida:</span> <span id="medida"></span></p>
+  <div id="scanner"></div>
+
+  <div class="resultado" id="resultado">
+    <p><span class="label">Código:</span> <span id="codigo"></span></p>
+    <p><span class="label">Produto:</span> <span id="nome"></span></p>
+    <p><span class="label">Categoria:</span> <span id="categoria"></span></p>
+    <p><span class="label">Medida:</span> <span id="medida"></span></p>
+  </div>
 </div>
 
 <script>
-  Quagga.init({
-    inputStream: {
-      name: "Live",
-      type: "LiveStream",
-      target: document.querySelector('#scanner'),
-      constraints: {
-        facingMode: "environment"
-      }
-    },
-    decoder: {
-      readers: ["ean_reader", "ean_8_reader", "upc_reader"]
-    }
-  }, function(err) {
-    if (err) {
-      console.error(err);
-      return;
-    }
-    Quagga.start();
-  });
+  let scannerAtivo = false;
 
-  Quagga.onDetected(function(data) {
-    const code = data.codeResult.code;
-    Quagga.stop();
-    buscarProduto(code);
-  });
+  function iniciarScanner() {
+    if (scannerAtivo) return;
+
+    document.getElementById("scanner").style.display = "block";
+
+    Quagga.init({
+      inputStream: {
+        type: "LiveStream",
+        target: document.querySelector("#scanner"),
+        constraints: {
+          facingMode: "environment"
+        }
+      },
+      decoder: {
+        readers: ["ean_reader", "ean_8_reader", "upc_reader"]
+      }
+    }, function (err) {
+      if (err) {
+        alert("Erro ao acessar a câmera");
+        return;
+      }
+      Quagga.start();
+      scannerAtivo = true;
+    });
+
+    Quagga.onDetected(function (data) {
+      const codigo = data.codeResult.code;
+      Quagga.stop();
+      scannerAtivo = false;
+      buscarProduto(codigo);
+    });
+  }
 
   function buscarProduto(codigo) {
     fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)
@@ -74,15 +143,15 @@
         document.getElementById("codigo").innerText = codigo;
 
         if (data.status === 1) {
-          const produto = data.product;
-          const nome = produto.product_name || "Não encontrado";
-          const categoria = produto.categories || "Não informada";
+          const p = data.product;
+          const nome = p.product_name || "Não informado";
+          const categoria = p.categories || "Não informada";
 
           let medida = "UN";
-          const texto = (nome + " " + (produto.quantity || "")).toLowerCase();
+          const texto = (nome + " " + (p.quantity || "")).toLowerCase();
 
           if (texto.includes("kg")) medida = "KG";
-          else if (texto.includes("g")) medida = "KG";
+          else if (texto.includes("g")) medida = "G";
           else if (texto.includes("l")) medida = "L";
           else if (texto.includes("ml")) medida = "ML";
           else if (texto.includes("cx")) medida = "CX";
