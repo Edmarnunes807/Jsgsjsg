@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Leitor de Código de Barras</title>
+  <script src="https://unpkg.com/@ericblade/quagga2/dist/quagga.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    #scanner {
+      width: 100%;
+      max-width: 400px;
+      margin: auto;
+    }
+    .resultado {
+      background: #fff;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+    .label {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<h2>📷 Leitor de Código de Barras</h2>
+
+<div id="scanner"></div>
+
+<div class="resultado" id="resultado" style="display:none;">
+  <p><span class="label">Código:</span> <span id="codigo"></span></p>
+  <p><span class="label">Produto:</span> <span id="nome"></span></p>
+  <p><span class="label">Categoria:</span> <span id="categoria"></span></p>
+  <p><span class="label">Medida:</span> <span id="medida"></span></p>
+</div>
+
+<script>
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: document.querySelector('#scanner'),
+      constraints: {
+        facingMode: "environment"
+      }
+    },
+    decoder: {
+      readers: ["ean_reader", "ean_8_reader", "upc_reader"]
+    }
+  }, function(err) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    Quagga.start();
+  });
+
+  Quagga.onDetected(function(data) {
+    const code = data.codeResult.code;
+    Quagga.stop();
+    buscarProduto(code);
+  });
+
+  function buscarProduto(codigo) {
+    fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("resultado").style.display = "block";
+        document.getElementById("codigo").innerText = codigo;
+
+        if (data.status === 1) {
+          const produto = data.product;
+          const nome = produto.product_name || "Não encontrado";
+          const categoria = produto.categories || "Não informada";
+
+          let medida = "UN";
+          const texto = (nome + " " + (produto.quantity || "")).toLowerCase();
+
+          if (texto.includes("kg")) medida = "KG";
+          else if (texto.includes("g")) medida = "KG";
+          else if (texto.includes("l")) medida = "L";
+          else if (texto.includes("ml")) medida = "ML";
+          else if (texto.includes("cx")) medida = "CX";
+
+          document.getElementById("nome").innerText = nome;
+          document.getElementById("categoria").innerText = categoria;
+          document.getElementById("medida").innerText = medida;
+        } else {
+          document.getElementById("nome").innerText = "Produto não encontrado";
+          document.getElementById("categoria").innerText = "-";
+          document.getElementById("medida").innerText = "-";
+        }
+      });
+  }
+</script>
+
+</body>
+</html>
