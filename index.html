@@ -3,36 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Scanner de Código de Barras</title>
+  <title>Scanner de Produtos</title>
 
+  <!-- QuaggaJS -->
   <script src="https://unpkg.com/@ericblade/quagga2/dist/quagga.js"></script>
 
   <style>
     body {
       margin: 0;
-      font-family: 'Segoe UI', Arial, sans-serif;
+      font-family: "Segoe UI", Arial, sans-serif;
       background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
       min-height: 100vh;
       display: flex;
-      align-items: center;
       justify-content: center;
-      color: #fff;
+      align-items: center;
     }
 
     .container {
       background: #ffffff;
-      color: #333;
       width: 100%;
       max-width: 420px;
-      border-radius: 18px;
       padding: 20px;
-      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-      animation: fadeIn 0.6s ease;
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+      animation: fadeIn 0.5s ease;
     }
 
     h1 {
       text-align: center;
+      margin-bottom: 15px;
       font-size: 22px;
+    }
+
+    .input {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
       margin-bottom: 10px;
     }
 
@@ -46,45 +55,47 @@
       color: #fff;
       cursor: pointer;
       transition: 0.3s;
-      margin-top: 10px;
+      margin-bottom: 10px;
     }
 
     .btn:hover {
       background: #203a43;
     }
 
-    .input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 15px;
-      margin-top: 10px;
-      box-sizing: border-box;
-    }
-
     #scanner {
-      margin-top: 15px;
+      display: none;
+      margin-top: 10px;
       border-radius: 12px;
       overflow: hidden;
-      display: none;
     }
 
     #scanner video {
       width: 100%;
-      border-radius: 12px;
     }
 
     .resultado {
+      display: none;
       margin-top: 15px;
       background: #f4f6f8;
-      padding: 12px;
-      border-radius: 12px;
-      display: none;
+      border-radius: 14px;
+      padding: 15px;
+      text-align: center;
     }
 
-    .label {
-      font-weight: 600;
+    .resultado img {
+      max-width: 100%;
+      max-height: 220px;
+      object-fit: contain;
+      margin-bottom: 10px;
+    }
+
+    .linha {
+      margin: 6px 0;
+      font-size: 15px;
+    }
+
+    .linha strong {
+      color: #000;
     }
 
     @keyframes fadeIn {
@@ -98,25 +109,25 @@
 <div class="container">
   <h1>📦 Scanner de Produtos</h1>
 
-  <input 
-    type="text" 
-    id="codigoManual" 
+  <input
+    type="text"
+    id="codigoManual"
     class="input"
     placeholder="Digite o código de barras"
     inputmode="numeric"
   />
 
   <button class="btn" onclick="buscarCodigoManual()">🔍 Buscar Código</button>
-
   <button class="btn" onclick="iniciarScanner()">📷 Abrir Scanner</button>
 
   <div id="scanner"></div>
 
   <div class="resultado" id="resultado">
-    <p><span class="label">Código:</span> <span id="codigo"></span></p>
-    <p><span class="label">Produto:</span> <span id="nome"></span></p>
-    <p><span class="label">Categoria:</span> <span id="categoria"></span></p>
-    <p><span class="label">Medida:</span> <span id="medida"></span></p>
+    <img id="imagemProduto" src="" alt="" style="display:none;">
+    <div class="linha"><strong>Código:</strong> <span id="codigo"></span></div>
+    <div class="linha"><strong>Produto:</strong> <span id="nome"></span></div>
+    <div class="linha"><strong>Marca:</strong> <span id="marca"></span></div>
+    <div class="linha"><strong>Quantidade:</strong> <span id="quantidade"></span></div>
   </div>
 </div>
 
@@ -132,14 +143,12 @@
       inputStream: {
         type: "LiveStream",
         target: document.querySelector("#scanner"),
-        constraints: {
-          facingMode: "environment"
-        }
+        constraints: { facingMode: "environment" }
       },
       decoder: {
         readers: ["ean_reader", "ean_8_reader", "upc_reader"]
       }
-    }, function (err) {
+    }, err => {
       if (err) {
         alert("Erro ao acessar a câmera");
         return;
@@ -148,7 +157,7 @@
       scannerAtivo = true;
     });
 
-    Quagga.onDetected(function (data) {
+    Quagga.onDetected(data => {
       const codigo = data.codeResult.code;
       Quagga.stop();
       scannerAtivo = false;
@@ -159,7 +168,7 @@
   function buscarCodigoManual() {
     const codigo = document.getElementById("codigoManual").value.trim();
     if (!codigo) {
-      alert("Digite um código de barras válido");
+      alert("Digite um código válido");
       return;
     }
     buscarProduto(codigo);
@@ -169,30 +178,36 @@
     fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)
       .then(res => res.json())
       .then(data => {
-        document.getElementById("resultado").style.display = "block";
+        const resultado = document.getElementById("resultado");
+        const img = document.getElementById("imagemProduto");
+
+        resultado.style.display = "block";
         document.getElementById("codigo").innerText = codigo;
 
-        if (data.status === 1) {
-          const p = data.product;
-          const nome = p.product_name || "Não informado";
-          const categoria = p.categories || "Não informada";
-
-          let medida = "UN";
-          const texto = (nome + " " + (p.quantity || "")).toLowerCase();
-
-          if (texto.includes("kg")) medida = "KG";
-          else if (texto.includes("g")) medida = "G";
-          else if (texto.includes("l")) medida = "L";
-          else if (texto.includes("ml")) medida = "ML";
-          else if (texto.includes("cx")) medida = "CX";
-
-          document.getElementById("nome").innerText = nome;
-          document.getElementById("categoria").innerText = categoria;
-          document.getElementById("medida").innerText = medida;
-        } else {
+        if (data.status !== 1) {
           document.getElementById("nome").innerText = "Produto não encontrado";
-          document.getElementById("categoria").innerText = "-";
-          document.getElementById("medida").innerText = "-";
+          document.getElementById("marca").innerText = "-";
+          document.getElementById("quantidade").innerText = "-";
+          img.style.display = "none";
+          return;
+        }
+
+        const p = data.product;
+
+        document.getElementById("nome").innerText =
+          p.product_name || "Não informado";
+
+        document.getElementById("marca").innerText =
+          p.brands || "Não informada";
+
+        document.getElementById("quantidade").innerText =
+          p.quantity || "Não informada";
+
+        if (p.image_front_url) {
+          img.src = p.image_front_url;
+          img.style.display = "block";
+        } else {
+          img.style.display = "none";
         }
       });
   }
