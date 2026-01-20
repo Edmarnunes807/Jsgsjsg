@@ -18,12 +18,274 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Enter') searchManual();
     });
     
-    // Remover sistema de tabs
-    document.querySelectorAll('.tab-container, .tab').forEach(el => el.style.display = 'none');
+    // Remover sistema de tabs se existir
+    const tabContainers = document.querySelectorAll('.tab-container, .tab');
+    if (tabContainers.length > 0) {
+        tabContainers.forEach(el => el.style.display = 'none');
+    }
     
     // Verificar status da API
     checkAPIStatus();
 });
+
+// ========== FUNÇÕES DO SCANNER (FALTANTES NO PRIMEIRO CÓDIGO) ==========
+async function initScanner() {
+    if (isScanning) return;
+    
+    try {
+        updateStatus('Iniciando câmera...', 'scanning');
+        
+        // Mostrar interface do scanner
+        const scannerContainer = document.getElementById('scannerContainer');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        
+        if (scannerContainer) scannerContainer.style.display = 'block';
+        if (startBtn) startBtn.style.display = 'none';
+        if (stopBtn) stopBtn.style.display = 'inline-block';
+        
+        const config = {
+            fps: 30,
+            qrbox: { width: 300, height: 200 },
+            aspectRatio: 4/3,
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39
+            ]
+        };
+        
+        // Verificar se a biblioteca está disponível
+        if (typeof Html5Qrcode === 'undefined') {
+            throw new Error('Biblioteca de scanner não carregada');
+        }
+        
+        html5QrCode = new Html5Qrcode("reader");
+        
+        // Tentar encontrar câmera traseira
+        const rearCameraId = await findRearCamera();
+        
+        if (rearCameraId) {
+            currentCameraId = rearCameraId;
+            
+            const cameraConfig = {
+                ...config,
+                videoConstraints: {
+                    deviceId: { exact: rearCameraId },
+                    width: { min: 1280, ideal: 1920, max: 2560 },
+                    height: { min: 720, ideal: 1080, max: 1440 },
+                    frameRate: { ideal: 30, min: 24 }
+                }
+            };
+            
+            await html5QrCode.start(
+                rearCameraId,
+                cameraConfig,
+                onScanSuccess,
+                onScanError
+            );
+            
+        } else {
+            // Fallback para modo ambiente
+            const fallbackConfig = {
+                ...config,
+                videoConstraints: {
+                    facingMode: { exact: "environment" },
+                    width: { min: 1280, ideal: 1920 },
+                    height: { min: 720, ideal: 1080 }
+                }
+            };
+            
+            await html5Qrcode.start(
+                { facingMode: "environment" },
+                fallbackConfig,
+                onScanSuccess,
+                onScanError
+            );
+            
+            currentCameraId = "environment";
+        }
+        
+        updateStatus('Scanner ativo! Aponte para um código de barras...', 'success');
+        isScanning = true;
+        
+    } catch (error) {
+        console.error('Erro ao iniciar scanner:', error);
+        await handleScannerError(error);
+    }
+}
+
+async function findRearCamera() {
+    try {
+        // Verificar se temos permissão e acesso a dispositivos
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+            return null;
+        }
+        
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        // Primeiro, tentar encontrar por label específica
+        const exactCamera = videoDevices.find(device => 
+            device.label && device.label.includes("camera 0, facing back")
+        );
+        
+        if (exactCamera) return exactCamera.deviceId;
+        
+        // Procurar por palavras-chave na label
+        const rearCamera = videoDevices.find(device => {
+            if (!device.label) return false;
+            const label = device.label.toLowerCase();
+            return REAR_CAMERA_KEYWORDS.some(keyword => 
+                label.includes(keyword.toLowerCase())
+            );
+        });
+        
+        if (rearCamera) return rearCamera.deviceId;
+        
+        // Se tiver múltiplas câmeras, assumir que a última é a traseira (comum em celulares)
+        if (videoDevices.length > 1) {
+            return videoDevices[videoDevices.length - 1].deviceId;
+        }
+        
+        // Se só tem uma câmera, usar ela
+        if (videoDevices.length === 1) {
+            return videoDevices[0].deviceId;
+        }
+        
+        return null;
+        
+    } catch (error) {
+        console.error("Erro ao encontrar câmera:", error);
+        return null;
+    }
+}
+
+async function handleScannerError(error) {
+    if (html5QrCode) {
+        try {
+            await html5QrCode.stop();
+            html5QrCode.clear();
+        } catch (e) {
+            console.log('Erro ao parar scanner:', e);
+        }
+    }
+    
+    isScanning = false;
+    html5QrCode = null;
+    currentCameraId = null;
+    
+    // Restaurar botão de iniciar
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const scannerContainer = document.getElementById('scannerContainer');
+    
+    if (startBtn) startBtn.style.display = 'inline-block';
+    if (stopBtn) stopBtn.style.display = 'none';
+    if (scannerContainer) scannerContainer.style.display = 'none';
+    
+    // Mensagens de erro específicas
+    if (error.message && error.message.includes('permission')) {
+        updateStatus('Permissão da câmera negada. Permita o acesso à câmera nas configurações do navegador.', 'error');
+    } else if (error.message && error.message.includes('NotFoundError')) {
+        updateStatus('Nenhuma câmera encontrada no dispositivo.', 'error');
+    } else if (error.message && error.message.includes('NotSupportedError')) {
+        updateStatus('Dispositivo não suporta scanner de câmera.', 'error');
+    } else if (error.message && error.message.includes('NotAllowedError')) {
+        updateStatus('Acesso à câmera não permitido.', 'error');
+    } else if (error.message && error.message.includes('OverconstrainedError')) {
+        // Tentar modo mais simples
+        updateStatus('Tentando modo simplificado...', 'warning');
+        setTimeout(() => initScannerSimple(), 1000);
+        return;
+    } else {
+        updateStatus('Erro ao iniciar o scanner: ' + (error.message || 'Erro desconhecido'), 'error');
+    }
+}
+
+async function initScannerSimple() {
+    try {
+        updateStatus('Iniciando modo simplificado...', 'scanning');
+        
+        const simpleConfig = {
+            fps: 10,
+            qrbox: { width: 250, height: 150 },
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128
+            ]
+        };
+        
+        html5QrCode = new Html5Qrcode("reader");
+        
+        await html5QrCode.start(
+            { facingMode: "environment" },
+            simpleConfig,
+            onScanSuccess,
+            onScanError
+        );
+        
+        updateStatus('Scanner ativo (modo simplificado)!', 'success');
+        isScanning = true;
+        currentCameraId = "environment";
+        
+        // Atualizar interface
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const scannerContainer = document.getElementById('scannerContainer');
+        
+        if (scannerContainer) scannerContainer.style.display = 'block';
+        if (startBtn) startBtn.style.display = 'none';
+        if (stopBtn) stopBtn.style.display = 'inline-block';
+        
+    } catch (error) {
+        console.error('Erro no modo simplificado:', error);
+        updateStatus('Falha ao iniciar scanner em qualquer modo.', 'error');
+        
+        // Restaurar botão
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        if (startBtn) startBtn.style.display = 'inline-block';
+        if (stopBtn) stopBtn.style.display = 'none';
+    }
+}
+
+function onScanError(error) {
+    // Ignorar erros de "No MultiFormat Readers" que são normais
+    if (!error || typeof error !== 'string' || !error.includes("No MultiFormat Readers")) {
+        console.log('Erro de scan:', error);
+    }
+}
+
+async function stopScanner() {
+    if (html5QrCode && isScanning) {
+        try {
+            await html5QrCode.stop();
+        } catch (error) {
+            console.log('Erro ao parar scanner:', error);
+        }
+        html5QrCode.clear();
+    }
+    
+    isScanning = false;
+    html5QrCode = null;
+    currentCameraId = null;
+    
+    // Atualizar interface
+    const scannerContainer = document.getElementById('scannerContainer');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    
+    if (scannerContainer) scannerContainer.style.display = 'none';
+    if (startBtn) startBtn.style.display = 'inline-block';
+    if (stopBtn) stopBtn.style.display = 'none';
+    
+    updateStatus('Scanner parado. Clique em "Abrir Scanner" para iniciar novamente.', 'default');
+}
 
 // ========== FLUXO DE BUSCA PRINCIPAL ==========
 async function searchProduct(code) {
@@ -523,7 +785,9 @@ function editExternalProduct(code, name, brand, image, price, source) {
     document.getElementById('editPreco').value = decodeURIComponent(price);
     
     const saveBtn = document.getElementById('saveEditBtn');
-    saveBtn.onclick = () => saveEditedExternalProduct();
+    if (saveBtn) {
+        saveBtn.onclick = () => saveEditedExternalProduct();
+    }
     
     document.getElementById('editModal').classList.add('active');
 }
@@ -613,32 +877,6 @@ async function deleteProduct(ean, linha) {
     }
 }
 
-// ========== FUNÇÕES DO SCANNER ==========
-function onScanSuccess(decodedText, decodedResult) {
-    const now = Date.now();
-    const code = decodedText.trim();
-    
-    if (!isValidBarcode(code)) return;
-    if (code === lastScanned && (now - lastScanTime) < 2000) return;
-    
-    lastScanned = code;
-    lastScanTime = now;
-    
-    updateStatus(`📷 Código detectado: ${code}`, 'success');
-    
-    if (html5QrCode) html5QrCode.pause();
-    
-    document.getElementById('manualCode').value = code;
-    searchProduct(code);
-    
-    setTimeout(() => {
-        if (html5QrCode && isScanning) {
-            html5QrCode.resume();
-            updateStatus('Pronto para escanear novamente...', 'scanning');
-        }
-    }, 3000);
-}
-
 // ========== FUNÇÕES AUXILIARES ==========
 function updateStatus(message, type = 'default') {
     const statusDiv = document.getElementById('status');
@@ -698,7 +936,34 @@ function checkAPIStatus() {
     }
 }
 
+// ========== FUNÇÃO ONSCANSUCCESS DO SCANNER ==========
+function onScanSuccess(decodedText, decodedResult) {
+    const now = Date.now();
+    const code = decodedText.trim();
+    
+    if (!isValidBarcode(code)) return;
+    if (code === lastScanned && (now - lastScanTime) < 2000) return;
+    
+    lastScanned = code;
+    lastScanTime = now;
+    
+    updateStatus(`📷 Código detectado: ${code}`, 'success');
+    
+    if (html5QrCode) html5QrCode.pause();
+    
+    document.getElementById('manualCode').value = code;
+    searchProduct(code);
+    
+    setTimeout(() => {
+        if (html5QrCode && isScanning) {
+            html5QrCode.resume();
+            updateStatus('Pronto para escanear novamente...', 'scanning');
+        }
+    }, 3000);
+}
+
 // ========== EXPORT FUNCTIONS TO GLOBAL SCOPE ==========
+// Todas as funções que precisam ser acessíveis globalmente
 window.searchManual = searchManual;
 window.initScanner = initScanner;
 window.stopScanner = stopScanner;
