@@ -55,13 +55,12 @@
                 <i class="fas fa-check-circle"></i> Pronto para escanear
             </div>
             
-            <div class="tab-container">
-                <div class="tab active" onclick="switchTab('local')">
-                    <i class="fas fa-database"></i> Banco Local
-                </div>
-                <div class="tab" onclick="switchTab('external')">
-                    <i class="fas fa-globe"></i> APIs Externas
-                </div>
+            <!-- Botão para ver todos os produtos -->
+            <div class="view-all-container">
+                <h3><i class="fas fa-boxes"></i> Gerenciar Produtos</h3>
+                <button class="btn btn-info" onclick="showAllProducts()">
+                    <i class="fas fa-list"></i> Ver Todos os Produtos
+                </button>
             </div>
             
             <div class="result" id="result"></div>
@@ -76,7 +75,7 @@
     <div class="modal hidden" id="editModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-edit"></i> Editar Produto</h3>
+                <h3 id="modalTitle"><i class="fas fa-edit"></i> Editar Produto</h3>
                 <button class="btn-close" onclick="closeModal()">
                     <i class="fas fa-times"></i>
                 </button>
@@ -104,7 +103,7 @@
                     <i class="fas fa-times"></i> Cancelar
                 </button>
                 <button class="btn btn-success" id="saveEditBtn">
-                    <i class="fas fa-save"></i> Salvar Alterações
+                    <i class="fas fa-save"></i> Salvar
                 </button>
             </div>
         </div>
