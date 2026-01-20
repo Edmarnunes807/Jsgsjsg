@@ -75,7 +75,6 @@
       box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
-    /* Moldura de foco mais destacada */
     .scanner-overlay {
       position: absolute;
       top: 0;
@@ -194,9 +193,40 @@
       border-left: 4px solid #2c5364;
     }
 
+    .sucesso {
+      background: #d4edda !important;
+      border-left: 4px solid #28a745 !important;
+    }
+
+    .erro {
+      background: #f8d7da !important;
+      border-left: 4px solid #dc3545 !important;
+    }
+
+    .aviso {
+      background: #fff3cd !important;
+      border-left: 4px solid #ffc107 !important;
+    }
+
     .loading {
       text-align: center;
       padding: 20px;
+      color: #666;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .dicas {
@@ -252,6 +282,17 @@
       font-size: 12px;
       z-index: 20;
     }
+
+    .teste-api {
+      margin-top: 15px;
+      text-align: center;
+    }
+
+    .teste-api .btn {
+      background: #6c757d;
+      font-size: 14px;
+      padding: 10px;
+    }
   </style>
 </head>
 <body>
@@ -263,12 +304,17 @@
     type="text"
     id="codigoManual"
     class="input"
-    placeholder="Digite o código de barras"
+    placeholder="Digite o código de barras para teste"
     inputmode="numeric"
+    value="7891000315507"
   />
 
   <button class="btn" onclick="buscarCodigoManual()">🔍 Buscar Código</button>
   <button class="btn" onclick="iniciarScanner()" id="btnScanner">📷 Abrir Scanner</button>
+
+  <div class="teste-api">
+    <button class="btn" onclick="testarAPI()">🔄 Testar Conexão com API</button>
+  </div>
 
   <div class="mensagem" id="mensagemScanner">
     <strong>Dicas para melhor leitura:</strong><br>
@@ -297,11 +343,7 @@
   </div>
 
   <div class="resultado" id="resultado">
-    <img id="imagemProduto" style="display:none;">
-    <div class="linha"><strong>Código:</strong> <span id="codigo"></span></div>
-    <div class="linha"><strong>Produto:</strong> <span id="nome"></span></div>
-    <div class="linha"><strong>Marca:</strong> <span id="marca"></span></div>
-    <div class="linha"><strong>Quantidade:</strong> <span id="quantidade"></span></div>
+    <!-- Conteúdo será preenchido dinamicamente -->
   </div>
 
   <div class="dicas" id="dicasScanner" style="display: none;">
@@ -325,6 +367,79 @@ let streamVideo = null;
 let zoomAtual = 1.0;
 let track = null;
 
+// Função para testar a API
+function testarAPI() {
+  const mensagemDiv = document.getElementById("mensagemScanner");
+  mensagemDiv.className = "mensagem aviso";
+  mensagemDiv.innerHTML = '<div class="spinner"></div>Testando conexão com a API...';
+  
+  // Testar com um código conhecido (Coca-Cola 350ml)
+  const codigoTeste = "7894900010015";
+  
+  buscarProdutoAPI(codigoTeste)
+    .then(data => {
+      if (data.status === 1) {
+        mensagemDiv.className = "mensagem sucesso";
+        mensagemDiv.innerHTML = '✅ <strong>Conexão com API OK!</strong><br>A API está funcionando perfeitamente.';
+        console.log("API testada com sucesso:", data);
+      } else {
+        mensagemDiv.className = "mensagem aviso";
+        mensagemDiv.innerHTML = '⚠️ <strong>API funcionando, mas produto não encontrado</strong><br>Tente outro código como: 7891000315507';
+      }
+    })
+    .catch(err => {
+      console.error("Erro no teste da API:", err);
+      mensagemDiv.className = "mensagem erro";
+      mensagemDiv.innerHTML = '❌ <strong>Erro na conexão com API</strong><br>' + err.message;
+    });
+}
+
+// Função principal para buscar na API (com múltiplos fallbacks)
+async function buscarProdutoAPI(codigo) {
+  console.log(`Buscando produto com código: ${codigo}`);
+  
+  // Lista de proxies gratuitas (fallbacks)
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)}`,
+    `https://corsproxy.io/?${encodeURIComponent(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)}`,
+    // Tentativa direta (pode falhar por CORS em alguns navegadores)
+    `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`
+  ];
+  
+  let ultimoErro = null;
+  
+  // Tentar cada proxy até um funcionar
+  for (const url of proxies) {
+    try {
+      console.log(`Tentando proxy: ${url.substring(0, 50)}...`);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'ScannerApp/1.0'
+        },
+        mode: 'cors'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Resposta da API:", data);
+      return data;
+      
+    } catch (err) {
+      console.log(`Proxy falhou: ${err.message}`);
+      ultimoErro = err;
+      continue; // Tenta o próximo proxy
+    }
+  }
+  
+  throw ultimoErro || new Error("Todos os proxies falharam");
+}
+
 function iniciarScanner() {
   if (scannerAtivo) return;
 
@@ -336,6 +451,7 @@ function iniciarScanner() {
   const dicasDiv = document.getElementById("dicasScanner");
   
   scannerDiv.style.display = "block";
+  mensagemDiv.className = "mensagem";
   mensagemDiv.innerHTML = "<strong>Iniciando câmera...</strong><br>Permita o acesso à câmera quando solicitado";
   controlsDiv.style.display = "flex";
   zoomControls.style.display = "flex";
@@ -344,8 +460,8 @@ function iniciarScanner() {
   
   document.getElementById("codigoManual").style.display = "none";
   document.querySelector('button[onclick="buscarCodigoManual()"]').style.display = "none";
+  document.querySelector('.teste-api').style.display = "none";
 
-  // Configurações otimizadas para foco
   const constraints = {
     video: {
       facingMode: cameraFrente ? "user" : "environment",
@@ -355,43 +471,32 @@ function iniciarScanner() {
     }
   };
 
-  // Tentar obter acesso à câmera com suporte a foco
   navigator.mediaDevices.getUserMedia(constraints)
     .then(function(stream) {
       streamVideo = stream;
       track = stream.getVideoTracks()[0];
       
-      // Configurar capacidades da câmera
       if (track && track.getCapabilities) {
         const capabilities = track.getCapabilities();
-        const settings = track.getSettings();
-        
-        console.log("Capacidades da câmera:", capabilities);
-        console.log("Configurações atuais:", settings);
-        
-        // Tentar configurar foco automático
         if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
           track.applyConstraints({
             advanced: [{ focusMode: 'continuous' }]
           }).then(() => {
             document.getElementById("focoStatus").textContent = "Foco: automático";
-          }).catch(err => {
-            console.log("Foco automático não suportado:", err);
           });
         }
         
-        // Verificar suporte a zoom
         if (capabilities.zoom) {
-          zoomAtual = settings.zoom || 1.0;
+          zoomAtual = track.getSettings().zoom || 1.0;
         }
       }
 
-      // Inicializar Quagga com o stream da câmera
       iniciarQuagga(stream);
     })
     .catch(function(err) {
       console.error("Erro ao acessar câmera:", err);
-      mensagemDiv.innerHTML = `<strong style="color: red;">Erro ao acessar câmera:</strong><br>${err.message}<br><br>Verifique as permissões da câmera.`;
+      mensagemDiv.className = "mensagem erro";
+      mensagemDiv.innerHTML = `<strong>Erro ao acessar câmera:</strong><br>${err.message}`;
       pararScanner();
     });
 }
@@ -415,14 +520,13 @@ function iniciarQuagga(stream) {
         right: "10%",
         left: "10%",
         bottom: "25%"
-      },
-      singleChannel: false
+      }
     },
     locator: {
-      patchSize: "x-large", // Maior para detectar códigos pequenos
+      patchSize: "x-large",
       halfSample: true
     },
-    frequency: 30, // Alta frequência para detecção rápida
+    frequency: 30,
     numOfWorkers: navigator.hardwareConcurrency || 2,
     decoder: {
       readers: [
@@ -432,31 +536,27 @@ function iniciarQuagga(stream) {
         "upc_e_reader",
         "code_128_reader",
         "code_39_reader",
-        "code_93_reader",
-        "codabar_reader"
-      ],
-      multiple: false
+        "code_93_reader"
+      ]
     },
     locate: true,
     debug: {
-      drawBoundingBox: false,
-      showFrequency: false,
-      drawScanline: true,
-      showPattern: false
+      drawScanline: true
     }
   }, function(err) {
     if (err) {
       console.error("Erro ao iniciar Quagga:", err);
-      mensagemDiv.innerHTML = `<strong style="color: red;">Erro no scanner:</strong><br>${err.message}`;
+      mensagemDiv.className = "mensagem erro";
+      mensagemDiv.innerHTML = `<strong>Erro no scanner:</strong><br>${err.message}`;
       pararScanner();
       return;
     }
     
     Quagga.start();
     scannerAtivo = true;
-    mensagemDiv.innerHTML = "<strong style='color: green;'>✓ Scanner ativo!</strong><br>Aponte para o código de barras dentro da área verde";
+    mensagemDiv.className = "mensagem sucesso";
+    mensagemDiv.innerHTML = "<strong>✓ Scanner ativo!</strong><br>Aponte para o código de barras dentro da área verde";
     
-    // Adicionar evento de toque para foco manual
     scannerDiv.addEventListener('click', focarNoPonto);
   });
 
@@ -467,7 +567,6 @@ function iniciarQuagga(stream) {
     const codigo = data.codeResult.code;
     const now = Date.now();
     
-    // Prevenir leituras duplicadas
     if (codigo === ultimoCodigoLido && (now - timeoutDetecao) < 1500) {
       return;
     }
@@ -475,7 +574,6 @@ function iniciarQuagga(stream) {
     ultimoCodigoLido = codigo;
     timeoutDetecao = now;
     
-    // Feedback visual
     const focusArea = document.querySelector('.focus-area');
     focusArea.style.borderColor = '#00ff00';
     focusArea.style.boxShadow = '0 0 0 1000px rgba(0, 0, 0, 0.7), 0 0 50px rgba(0, 255, 0, 0.8)';
@@ -484,18 +582,15 @@ function iniciarQuagga(stream) {
       focusArea.style.boxShadow = '';
     }, 500);
     
-    // Parar scanner temporariamente
     Quagga.stop();
     scannerAtivo = false;
     
-    // Buscar produto
     buscarProduto(codigo);
     
-    // Mostrar mensagem
-    document.getElementById("mensagemScanner").innerHTML = 
-      `✅ <strong>Código lido: ${codigo}</strong><br>Buscando informações...`;
+    const mensagemDiv = document.getElementById("mensagemScanner");
+    mensagemDiv.className = "mensagem";
+    mensagemDiv.innerHTML = `<strong>Código lido: ${codigo}</strong><br>Buscando informações...`;
     
-    // Reiniciar scanner após 2 segundos
     setTimeout(() => {
       if (!scannerAtivo) {
         iniciarScanner();
@@ -508,10 +603,7 @@ function forcarFoco() {
   if (!track || !track.getCapabilities) return;
   
   const capabilities = track.getCapabilities();
-  
-  // Tentar diferentes modos de foco
   if (capabilities.focusMode) {
-    // Ciclar entre modos de foco
     const modos = ['manual', 'continuous', 'single-shot'];
     let modoAtual = track.getSettings().focusMode || 'continuous';
     let proximoModo = modos[(modos.indexOf(modoAtual) + 1) % modos.length];
@@ -520,19 +612,9 @@ function forcarFoco() {
       advanced: [{ focusMode: proximoModo }]
     }).then(() => {
       document.getElementById("focoStatus").textContent = `Foco: ${proximoModo}`;
-      document.getElementById("mensagemScanner").innerHTML = 
-        `🔍 <strong>Modo de foco alterado para: ${proximoModo}</strong>`;
-      
-      // Se for modo manual, tentar focar na distância ideal
-      if (proximoModo === 'manual') {
-        if (capabilities.focusDistance) {
-          track.applyConstraints({
-            advanced: [{ focusDistance: 0.5 }] // 50cm de distância
-          });
-        }
-      }
-    }).catch(err => {
-      console.log("Não foi possível alterar foco:", err);
+      const mensagemDiv = document.getElementById("mensagemScanner");
+      mensagemDiv.className = "mensagem";
+      mensagemDiv.innerHTML = `🔍 <strong>Modo de foco: ${proximoModo}</strong>`;
     });
   }
 }
@@ -542,27 +624,19 @@ function focarNoPonto(event) {
   
   const scannerDiv = document.getElementById("scanner");
   const rect = scannerDiv.getBoundingClientRect();
-  
-  // Calcular coordenadas normalizadas (0-1)
   const x = (event.clientX - rect.left) / rect.width;
   const y = (event.clientY - rect.top) / rect.height;
   
   const capabilities = track.getCapabilities();
-  
   if (capabilities.focusMode && capabilities.focusMode.includes('manual')) {
-    // Para câmeras que suportam foco por toque
     track.applyConstraints({
       advanced: [
         { 
           focusMode: 'manual',
-          focusDistance: Math.max(0.1, Math.min(1.0, y)) // Ajustar baseado na posição Y
-        },
-        {
-          pointsOfInterest: [{x: x, y: y}]
+          focusDistance: Math.max(0.1, Math.min(1.0, y))
         }
       ]
     }).then(() => {
-      // Feedback visual
       const focusArea = document.querySelector('.focus-area');
       focusArea.style.borderColor = '#ff9900';
       focusArea.style.animation = 'none';
@@ -570,9 +644,6 @@ function focarNoPonto(event) {
         focusArea.style.borderColor = '';
         focusArea.style.animation = '';
       }, 1000);
-      
-      document.getElementById("mensagemScanner").innerHTML = 
-        "👆 <strong>Foco manual aplicado</strong><br>Toque em diferentes áreas para ajustar";
     });
   }
 }
@@ -589,9 +660,6 @@ function ajustarZoom(delta) {
     
     track.applyConstraints({
       advanced: [{ zoom: zoomAtual }]
-    }).then(() => {
-      document.getElementById("mensagemScanner").innerHTML = 
-        `🔍 <strong>Zoom: ${zoomAtual.toFixed(1)}x</strong><br>Ajuste para códigos pequenos ou grandes`;
     });
   }
 }
@@ -602,7 +670,6 @@ function pararScanner() {
     scannerAtivo = false;
   }
   
-  // Parar stream de vídeo
   if (streamVideo) {
     streamVideo.getTracks().forEach(track => track.stop());
     streamVideo = null;
@@ -617,8 +684,8 @@ function pararScanner() {
   const dicasDiv = document.getElementById("dicasScanner");
   
   scannerDiv.style.display = "none";
+  mensagemDiv.className = "mensagem";
   mensagemDiv.innerHTML = "<strong>Dicas para melhor leitura:</strong><br>1. Mantenha o código na área verde<br>2. Certifique-se de ter boa iluminação<br>3. Evite reflexos no código";
-  mensagemDiv.style.display = "block";
   controlsDiv.style.display = "none";
   zoomControls.style.display = "none";
   dicasDiv.style.display = "none";
@@ -626,8 +693,8 @@ function pararScanner() {
   
   document.getElementById("codigoManual").style.display = "block";
   document.querySelector('button[onclick="buscarCodigoManual()"]').style.display = "block";
+  document.querySelector('.teste-api').style.display = "block";
   
-  // Remover evento de clique
   scannerDiv.removeEventListener('click', focarNoPonto);
 }
 
@@ -649,82 +716,81 @@ function buscarCodigoManual() {
 }
 
 function buscarProduto(codigo) {
-  // Mostrar loading
   const resultado = document.getElementById("resultado");
   resultado.style.display = "block";
   resultado.innerHTML = `
     <div class="loading">
+      <div class="spinner"></div>
       <div style="margin-bottom: 10px;">🔍 Buscando produto...</div>
       <div style="font-size: 12px; color: #666;">Código: ${codigo}</div>
     </div>
   `;
 
-  // Usar proxy para evitar problemas de CORS
-  const proxyUrl = 'https://corsproxy.io/?';
-  const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`;
-  
-  fetch(proxyUrl + encodeURIComponent(apiUrl))
-    .then(res => {
-      if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
-      return res.json();
-    })
+  buscarProdutoAPI(codigo)
     .then(data => {
-      const resultado = document.getElementById("resultado");
-      const img = document.getElementById("imagemProduto");
-
       resultado.style.display = "block";
-      resultado.innerHTML = ''; // Limpar loading
       
-      document.getElementById("codigo").innerText = codigo;
-
       if (data.status !== 1 || !data.product) {
         resultado.innerHTML = `
           <div class="linha"><strong>Código:</strong> ${codigo}</div>
-          <div class="mensagem" style="background: #fff3cd; border-left-color: #ffc107;">
+          <div class="mensagem aviso">
             <strong>Produto não encontrado</strong><br>
-            Este código não está na base do Open Food Facts.
+            Este código não está na base do Open Food Facts.<br><br>
+            <small>Códigos de teste que funcionam:<br>
+            7891000315507 (Nescau), 7894900010015 (Coca-Cola)</small>
           </div>
         `;
         return;
       }
 
       const p = data.product;
-
-      document.getElementById("nome").innerText = 
-        p.product_name || p.product_name_pt || p.product_name_en || "Não informado";
-      document.getElementById("marca").innerText = 
-        p.brands || p.brand_owner || "Não informada";
-      document.getElementById("quantidade").innerText = 
-        p.quantity || p.product_quantity || "Não informada";
-
+      let imagemHTML = '';
+      
       if (p.image_front_url || p.image_url) {
-        img.src = p.image_front_url || p.image_url;
-        img.style.display = "block";
-      } else {
-        img.style.display = "none";
+        const imgUrl = p.image_front_url || p.image_url;
+        imagemHTML = `<img src="${imgUrl}" style="max-width:100%; max-height:220px; border-radius:8px; margin-bottom:15px;" alt="${p.product_name || 'Produto'}">`;
       }
+
+      resultado.innerHTML = `
+        ${imagemHTML}
+        <div class="linha"><strong>Código:</strong> ${codigo}</div>
+        <div class="linha"><strong>Produto:</strong> ${p.product_name || p.product_name_pt || p.product_name_en || "Não informado"}</div>
+        <div class="linha"><strong>Marca:</strong> ${p.brands || p.brand_owner || "Não informada"}</div>
+        <div class="linha"><strong>Quantidade:</strong> ${p.quantity || p.product_quantity || "Não informada"}</div>
+        <div class="linha"><strong>Categorias:</strong> ${p.categories || "Não informado"}</div>
+        ${p.nutriscore_grade ? `<div class="linha"><strong>Nutri-Score:</strong> ${p.nutriscore_grade.toUpperCase()}</div>` : ''}
+      `;
     })
     .catch(err => {
       console.error("Erro na busca:", err);
       resultado.innerHTML = `
-        <div class="mensagem" style="background: #f8d7da; border-left-color: #dc3545;">
+        <div class="mensagem erro">
           <strong>Erro ao buscar produto</strong><br>
-          Verifique sua conexão com a internet e tente novamente.
+          ${err.message}<br><br>
+          <button class="btn" style="padding:8px;font-size:14px;" onclick="testarAPI()">
+            🔄 Testar Conexão com API
+          </button>
         </div>
       `;
     });
 }
 
-// Tecla ESC para fechar scanner
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && scannerAtivo) {
     pararScanner();
   }
 });
 
-// Informações iniciais
-console.log("Scanner de produtos carregado!");
-console.log("Dicas: Use boa iluminação e mantenha o código estável");
+// Testar API automaticamente ao carregar a página
+window.addEventListener('load', function() {
+  console.log("Scanner de produtos carregado!");
+  
+  // Pré-carregar alguns códigos de teste no campo manual
+  document.getElementById("codigoManual").value = "7891000315507";
+  
+  // Teste automático da API (opcional, descomente se quiser)
+  // setTimeout(testarAPI, 1000);
+});
 </script>
 
 </body>
