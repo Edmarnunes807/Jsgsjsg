@@ -1,5 +1,5 @@
 // ========== CONFIGURAÇÕES ==========
-const GOOGLE_SHEETS_API = "https://script.google.com/macros/s/AKfycbzgcibH369NS25K6afIYWfspNev0OcaXkRl2C2_HsmNGvdMTTK0OO4cn0VqmaC70GLGfg/exec"; // ← COLE SUA URL AQUI
+const GOOGLE_SHEETS_API = "https://script.google.com/macros/s/AKfycbzgcibH369NS25K6afIYWfspNev0OcaXkRl2C2_HsmNGvdMTTK0OO4cn0VqmaC70GLGfg/exec";
 const BLUESOFT_API_KEY = "7tF33vAL9xZs7ZRoSMBitg";
 
 // ========== VARIÁVEIS GLOBAIS ==========
@@ -8,32 +8,278 @@ let currentCameraId = null;
 let isScanning = false;
 let lastScanned = '';
 let lastScanTime = 0;
-let currentTab = 'local';
-let currentProduct = null;
+let currentEditProduct = null;
 
 const REAR_CAMERA_KEYWORDS = ["back", "rear", "environment", "traseira", "camera 0"];
 
 // ========== INICIALIZAÇÃO ==========
 document.addEventListener('DOMContentLoaded', function() {
-    // Configurar eventos
     document.getElementById('manualCode').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') searchManual();
     });
     
-    // Configurar botão de salvar edição
-    document.getElementById('saveEditBtn').addEventListener('click', saveEditedProduct);
-    
-    // Verificar status da API
-    checkAPIStatus();
+    // Configurar botão de salvar do modal
+    document.getElementById('saveProductBtn').addEventListener('click', saveProductToDatabase);
 });
 
-// ========== FLUXO DE BUSCA OTIMIZADO ==========
-async function searchProduct(code) {
-    if (!code || !isValidBarcode(code)) {
-        showAlert('Código EAN inválido. Use 8-13 dígitos.', 'error');
-        return;
+// ========== SCANNER ==========
+async function initScanner() {
+    if (isScanning) return;
+    
+    try {
+        updateStatus('Iniciando câmera traseira...', 'scanning');
+        
+        document.getElementById('cameraInfo').classList.remove('hidden');
+        document.getElementById('startBtn').classList.add('hidden');
+        document.getElementById('cameraControls').classList.remove('hidden');
+        document.getElementById('scannerContainer').style.display = 'block';
+        
+        const config = {
+            fps: 30,
+            qrbox: { width: 300, height: 200 },
+            aspectRatio: 4/3,
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39
+            ]
+        };
+        
+        html5QrCode = new Html5Qrcode("reader");
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        const rearCameraId = await findRearCamera();
+        
+        if (rearCameraId) {
+            currentCameraId = rearCameraId;
+            
+            const cameraConfig = {
+                ...config,
+                videoConstraints: {
+                    deviceId: { exact: rearCameraId },
+                    width: { min: 1280, ideal: 1920, max: 2560 },
+                    height: { min: 720, ideal: 1080, max: 1440 },
+                    frameRate: { ideal: 30, min: 24 },
+                    advanced: [
+                        { focusMode: "continuous" },
+                        { whiteBalanceMode: "continuous" }
+                    ]
+                }
+            };
+            
+            await html5QrCode.start(
+                rearCameraId,
+                cameraConfig,
+                onScanSuccess,
+                onScanError
+            );
+            
+        } else {
+            const fallbackConfig = {
+                ...config,
+                videoConstraints: {
+                    facingMode: { exact: "environment" },
+                    width: { min: 1280, ideal: 1920 },
+                    height: { min: 720, ideal: 1080 },
+                    frameRate: { ideal: 30 },
+                    advanced: [{ focusMode: "continuous" }]
+                }
+            };
+            
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                fallbackConfig,
+                onScanSuccess,
+                onScanError
+            );
+            
+            currentCameraId = "environment";
+        }
+        
+        updateStatus('Scanner ativo com auto-foco! Aponte para um código...', 'success');
+        isScanning = true;
+        
+    } catch (error) {
+        console.error('Erro ao iniciar scanner:', error);
+        await handleScannerError(error);
+    }
+}
+
+async function findRearCamera() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        const exactCamera = videoDevices.find(device => 
+            device.label && device.label.includes("camera 0, facing back")
+        );
+        
+        if (exactCamera) return exactCamera.deviceId;
+        
+        const rearCamera = videoDevices.find(device => {
+            if (!device.label) return false;
+            const label = device.label.toLowerCase();
+            return REAR_CAMERA_KEYWORDS.some(keyword => 
+                label.includes(keyword.toLowerCase())
+            );
+        });
+        
+        if (rearCamera) return rearCamera.deviceId;
+        
+        if (videoDevices.length > 0) return videoDevices[0].deviceId;
+        
+        return null;
+        
+    } catch (error) {
+        console.error("Erro ao encontrar câmera:", error);
+        return null;
+    }
+}
+
+async function handleScannerError(error) {
+    if (html5QrCode) {
+        try {
+            await html5QrCode.stop();
+            html5QrCode.clear();
+        } catch (e) {}
     }
     
+    isScanning = false;
+    html5QrCode = null;
+    currentCameraId = null;
+    
+    if (error.message.includes('permission')) {
+        updateStatus('Permissão da câmera negada. Permita o acesso à câmera.', 'error');
+    } else if (error.message.includes('NotFoundError')) {
+        updateStatus('Câmera traseira não disponível.', 'error');
+    } else if (error.message.includes('NotSupportedError')) {
+        updateStatus('Tentando modo padrão...', 'warning');
+        setTimeout(() => initScannerWithoutAdvanced(), 1000);
+        return;
+    } else {
+        updateStatus('Erro ao iniciar o scanner. Tente novamente.', 'error');
+    }
+    
+    document.getElementById('startBtn').classList.remove('hidden');
+    document.getElementById('cameraControls').classList.add('hidden');
+    document.getElementById('cameraInfo').classList.add('hidden');
+    document.getElementById('scannerContainer').style.display = 'none';
+}
+
+async function initScannerWithoutAdvanced() {
+    try {
+        updateStatus('Iniciando modo padrão...', 'scanning');
+        
+        const basicConfig = {
+            fps: 10,
+            qrbox: { width: 250, height: 150 },
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128
+            ]
+        };
+        
+        await html5QrCode.start(
+            { facingMode: "environment" },
+            basicConfig,
+            onScanSuccess,
+            onScanError
+        );
+        
+        updateStatus('Scanner ativo (modo padrão)!', 'success');
+        isScanning = true;
+        currentCameraId = "environment";
+        
+    } catch (error) {
+        updateStatus('Falha ao iniciar scanner.', 'error');
+        document.getElementById('startBtn').classList.remove('hidden');
+    }
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    const now = Date.now();
+    const code = decodedText.trim();
+    
+    if (!isValidBarcode(code)) return;
+    if (code === lastScanned && (now - lastScanTime) < 2000) return;
+    
+    lastScanned = code;
+    lastScanTime = now;
+    
+    updateStatus(`Código detectado: ${code}`, 'success');
+    
+    if (html5QrCode) html5QrCode.pause();
+    
+    document.getElementById('manualCode').value = code;
+    searchProduct(code);
+    
+    setTimeout(() => {
+        if (html5QrCode && isScanning) {
+            html5QrCode.resume();
+            updateStatus('Pronto para escanear novamente...', 'scanning');
+        }
+    }, 3000);
+}
+
+function onScanError(error) {
+    if (!error.includes("No MultiFormat Readers")) {
+        console.log('Erro de scan:', error);
+    }
+}
+
+function isValidBarcode(code) {
+    if (!/^\d+$/.test(code)) return false;
+    if (code.length < 8 || code.length > 13) return false;
+    if (code.length === 13) return validateEAN13(code);
+    return true;
+}
+
+function validateEAN13(code) {
+    let sum = 0;
+    for (let i = 0; i < 12; i++) {
+        const digit = parseInt(code[i]);
+        sum += digit * (i % 2 === 0 ? 1 : 3);
+    }
+    const checksum = (10 - (sum % 10)) % 10;
+    return checksum === parseInt(code[12]);
+}
+
+async function stopScanner() {
+    if (html5QrCode && isScanning) {
+        try {
+            await html5QrCode.stop();
+        } catch (error) {}
+        html5QrCode.clear();
+    }
+    
+    isScanning = false;
+    html5QrCode = null;
+    currentCameraId = null;
+    
+    document.getElementById('scannerContainer').style.display = 'none';
+    document.getElementById('startBtn').classList.remove('hidden');
+    document.getElementById('cameraControls').classList.add('hidden');
+    document.getElementById('cameraInfo').classList.add('hidden');
+    
+    updateStatus('Scanner parado. Clique para iniciar novamente.', 'default');
+}
+
+// ========== FLUXO DE BUSCA PRINCIPAL ==========
+function searchManual() {
+    const code = document.getElementById('manualCode').value.trim();
+    if (!code || code.length < 8) {
+        alert('Digite um código de barras válido (8-13 dígitos)');
+        return;
+    }
+    searchProduct(code);
+}
+
+async function searchProduct(code) {
     clearResult();
     updateStatus(`Buscando produto ${code}...`, 'scanning');
     
@@ -42,9 +288,8 @@ async function searchProduct(code) {
         const localResult = await searchInGoogleSheets(code);
         
         if (localResult && localResult.success && localResult.found) {
-            currentProduct = localResult.product;
-            showProductInfo(localResult.product, 'Banco Local', true);
-            updateStatus(`✅ Encontrado no banco local`, 'success');
+            showProductInfo(localResult.product, true);
+            updateStatus(`Encontrado no banco local`, 'success');
             return;
         }
         
@@ -54,7 +299,7 @@ async function searchProduct(code) {
         
         if (openFoodProduct && openFoodProduct.name) {
             showExternalProductInfo(openFoodProduct, code, 'Open Food Facts');
-            updateStatus(`✅ Encontrado no Open Food Facts`, 'success');
+            updateStatus(`Encontrado no Open Food Facts`, 'success');
             return;
         }
         
@@ -64,12 +309,12 @@ async function searchProduct(code) {
         
         if (bluesoftProduct && bluesoftProduct.name) {
             showExternalProductInfo(bluesoftProduct, code, 'Bluesoft Cosmos');
-            updateStatus(`✅ Encontrado no Bluesoft Cosmos`, 'success');
+            updateStatus(`Encontrado no Bluesoft Cosmos`, 'success');
             return;
         }
         
-        // 4º PASSO: Se não encontrou em nenhuma fonte, mostrar formulário para cadastrar
-        updateStatus('❌ Produto não encontrado em nenhuma fonte', 'error');
+        // 4º PASSO: Se não encontrou em nenhuma fonte
+        updateStatus('Produto não encontrado em nenhuma fonte', 'error');
         showAddToDatabaseForm(code);
         
     } catch (error) {
@@ -79,23 +324,8 @@ async function searchProduct(code) {
     }
 }
 
-// ========== BUSCA MANUAL ==========
-function searchManual() {
-    const code = document.getElementById('manualCode').value.trim();
-    if (!code || code.length < 8) {
-        showAlert('Digite um código de barras válido (8-13 dígitos)', 'warning');
-        return;
-    }
-    searchProduct(code);
-}
-
 // ========== BANCO LOCAL (GOOGLE SHEETS) ==========
 async function searchInGoogleSheets(ean) {
-    if (!GOOGLE_SHEETS_API || GOOGLE_SHEETS_API.includes("SUA_URL_DO_GOOGLE_APPS_SCRIPT")) {
-        console.warn("URL do Google Sheets não configurada");
-        return null;
-    }
-    
     try {
         const url = `${GOOGLE_SHEETS_API}?operation=search&ean=${encodeURIComponent(ean)}`;
         const response = await fetch(url);
@@ -185,7 +415,6 @@ async function deleteFromGoogleSheets(ean, linha) {
 // ========== APIS EXTERNAS ==========
 async function searchOpenFoodFacts(code) {
     try {
-        // Usando proxy para evitar CORS
         const proxyUrl = 'https://api.allorigins.win/raw?url=';
         const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
         
@@ -235,7 +464,7 @@ async function searchBluesoftCosmos(code) {
         const data = await response.json();
         
         return {
-            name: data.description || data.description || 'Produto',
+            name: data.description || 'Produto',
             brand: data.brand?.name || data.brand_name || data.manufacturer || '',
             image: data.thumbnail || data.image || null,
             price: data.price || data.average_price || '',
@@ -249,7 +478,7 @@ async function searchBluesoftCosmos(code) {
 }
 
 // ========== RENDERIZAÇÃO DE RESULTADOS ==========
-function showProductInfo(product, source, isFromDatabase = true) {
+function showProductInfo(product, isFromDatabase = true) {
     const resultDiv = document.getElementById('result');
     
     let imageHtml = '';
@@ -265,72 +494,61 @@ function showProductInfo(product, source, isFromDatabase = true) {
     } else {
         imageHtml = `
             <div class="product-image-container">
-                <div class="no-image">
-                    <i class="fas fa-image"></i>
-                    <span>Sem imagem disponível</span>
+                <div style="padding: 40px; text-align: center; color: #6b7280;">
+                    📷 Sem imagem
                 </div>
             </div>
         `;
     }
     
-    let sourceBadge = source;
-    if (isFromDatabase) {
-        sourceBadge += ' <span class="db-badge">BANCO LOCAL</span>';
-    }
-    
-    let priceHtml = '';
-    if (product.preco) {
-        priceHtml = `
-            <div class="product-price">
-                <i class="fas fa-money-bill-wave"></i>
-                R$ ${product.preco}
-            </div>
-        `;
-    }
+    let sourceBadge = isFromDatabase ? 
+        '<span class="db-badge">BANCO LOCAL</span>' : 
+        '<span class="db-missing">EXTERNO</span>';
     
     resultDiv.innerHTML = `
         <div class="product-card">
             ${imageHtml}
             
             <div class="product-details">
-                <div class="product-code">
-                    <i class="fas fa-barcode"></i> ${product.ean}
-                </div>
+                <div class="product-code">📦 EAN: ${product.ean}</div>
                 
                 <div class="product-title">${product.nome}</div>
                 
                 ${product.marca ? `
-                <div class="product-brand">
-                    <i class="fas fa-industry"></i> ${product.marca}
-                </div>
+                <div class="product-brand">🏭 ${product.marca}</div>
                 ` : ''}
                 
-                ${priceHtml}
+                ${product.preco ? `
+                <div style="margin-top: 10px; color: #10b981; font-weight: bold; font-size: 16px;">
+                    💰 R$ ${product.preco}
+                </div>
+                ` : ''}
                 
                 ${product.cadastro ? `
-                <div class="product-meta">
-                    <div><i class="fas fa-calendar-plus"></i> Cadastro: ${product.cadastro}</div>
-                    ${product.ultima_consulta ? `
-                    <div><i class="fas fa-history"></i> Última consulta: ${product.ultima_consulta}</div>
-                    ` : ''}
+                <div style="margin-top: 5px; font-size: 12px; color: #6b7280;">
+                    📅 Cadastro: ${product.cadastro}
                 </div>
                 ` : ''}
                 
-                <div class="source-badge">
-                    <i class="fas fa-database"></i> ${sourceBadge}
-                </div>
+                <div class="source-badge">Fonte: ${sourceBadge}</div>
             </div>
         </div>
         
-        <div class="action-buttons">
+        <div class="api-actions">
+            ${isFromDatabase ? `
             <button class="btn btn-warning" onclick="openEditModal('${product.ean}', '${encodeURIComponent(product.nome)}', '${encodeURIComponent(product.marca || '')}', '${encodeURIComponent(product.imagem || '')}', '${encodeURIComponent(product.preco || '')}', '${product.linha || ''}')">
-                <i class="fas fa-edit"></i> Editar
+                ✏️ Editar
             </button>
             <button class="btn btn-danger" onclick="deleteProduct('${product.ean}', '${product.linha || ''}')">
-                <i class="fas fa-trash"></i> Excluir
+                🗑️ Excluir
             </button>
+            ` : `
+            <button class="btn btn-success" onclick="saveExternalProductToDatabase('${product.ean}', '${encodeURIComponent(product.nome)}', '${encodeURIComponent(product.marca || '')}', '${encodeURIComponent(product.imagem || '')}', '${encodeURIComponent(product.preco || '')}', 'Banco Local')">
+                💾 Salvar no Banco
+            </button>
+            `}
             <button class="btn" onclick="searchOnline('${product.ean}', '${encodeURIComponent(product.nome)}')">
-                <i class="fas fa-globe"></i> Pesquisar Online
+                🌐 Pesquisar Online
             </button>
         </div>
     `;
@@ -354,20 +572,9 @@ function showExternalProductInfo(product, code, source) {
     } else {
         imageHtml = `
             <div class="product-image-container">
-                <div class="no-image">
-                    <i class="fas fa-image"></i>
-                    <span>Sem imagem disponível</span>
+                <div style="padding: 40px; text-align: center; color: #6b7280;">
+                    📷 Sem imagem
                 </div>
-            </div>
-        `;
-    }
-    
-    let priceHtml = '';
-    if (product.price) {
-        priceHtml = `
-            <div class="product-price">
-                <i class="fas fa-money-bill-wave"></i>
-                ${product.price}
             </div>
         `;
     }
@@ -377,35 +584,30 @@ function showExternalProductInfo(product, code, source) {
             ${imageHtml}
             
             <div class="product-details">
-                <div class="product-code">
-                    <i class="fas fa-barcode"></i> ${code}
-                </div>
+                <div class="product-code">📦 EAN: ${code}</div>
                 
                 <div class="product-title">${product.name}</div>
                 
                 ${product.brand ? `
-                <div class="product-brand">
-                    <i class="fas fa-industry"></i> ${product.brand}
+                <div class="product-brand">🏭 ${product.brand}</div>
+                ` : ''}
+                
+                ${product.price ? `
+                <div style="margin-top: 10px; color: #10b981; font-weight: bold; font-size: 16px;">
+                    💰 ${product.price}
                 </div>
                 ` : ''}
                 
-                ${priceHtml}
-                
-                <div class="source-badge">
-                    <i class="fas fa-external-link-alt"></i> Fonte: ${source} <span class="db-missing">EXTERNA</span>
-                </div>
+                <div class="source-badge">Fonte: ${source} <span class="db-missing">EXTERNO</span></div>
             </div>
         </div>
         
-        <div class="action-buttons">
+        <div class="api-actions">
             <button class="btn btn-success" onclick="saveExternalProductToDatabase('${code}', '${encodeURIComponent(product.name)}', '${encodeURIComponent(product.brand || '')}', '${encodeURIComponent(product.image || '')}', '${encodeURIComponent(product.price || '')}', '${source}')">
-                <i class="fas fa-save"></i> Salvar no Banco Local
-            </button>
-            <button class="btn btn-warning" onclick="editExternalProduct('${code}', '${encodeURIComponent(product.name)}', '${encodeURIComponent(product.brand || '')}', '${encodeURIComponent(product.image || '')}', '${encodeURIComponent(product.price || '')}', '${source}')">
-                <i class="fas fa-edit"></i> Editar antes de Salvar
+                💾 Salvar no Banco
             </button>
             <button class="btn" onclick="searchOnline('${code}', '${encodeURIComponent(product.name)}')">
-                <i class="fas fa-globe"></i> Pesquisar Online
+                🌐 Pesquisar Online
             </button>
         </div>
     `;
@@ -418,41 +620,20 @@ function showAddToDatabaseForm(code) {
     
     resultDiv.innerHTML = `
         <div class="no-results">
-            <div class="no-results-icon">
-                <i class="fas fa-plus-circle"></i>
-            </div>
-            <h3>Produto não encontrado</h3>
-            <p>
-                Código EAN: <strong>${code}</strong><br>
-                O produto não foi encontrado em nenhuma fonte.
+            <div class="no-results-icon">➕</div>
+            <h3 style="color: #6b7280; margin-bottom: 10px;">Produto não encontrado</h3>
+            <p style="color: #9ca3af; font-size: 14px; margin-bottom: 20px;">
+                Código: <strong>${code}</strong><br>
+                Deseja cadastrar manualmente?
             </p>
             
-            <div class="edit-form">
-                <div class="form-group">
-                    <label><i class="fas fa-tag"></i> Nome do Produto *</label>
-                    <input type="text" id="newNome" placeholder="Ex: Leite Integral 1L" required>
-                </div>
-                <div class="form-group">
-                    <label><i class="fas fa-industry"></i> Marca</label>
-                    <input type="text" id="newMarca" placeholder="Ex: Itambé">
-                </div>
-                <div class="form-group">
-                    <label><i class="fas fa-image"></i> URL da Imagem</label>
-                    <input type="text" id="newImagem" placeholder="https://exemplo.com/imagem.jpg">
-                </div>
-                <div class="form-group">
-                    <label><i class="fas fa-money-bill-wave"></i> Preço (R$)</label>
-                    <input type="text" id="newPreco" placeholder="Ex: 6.90">
-                </div>
-                
-                <div class="action-buttons">
-                    <button class="btn btn-success" onclick="saveNewProduct('${code}')">
-                        <i class="fas fa-save"></i> Salvar no Banco
-                    </button>
-                    <button class="btn" onclick="searchOnline('${code}')">
-                        <i class="fas fa-globe"></i> Pesquisar na Web
-                    </button>
-                </div>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-success" onclick="openManualAddModal('${code}')">
+                    ✏️ Cadastrar Manualmente
+                </button>
+                <button class="btn" onclick="searchOnline('${code}')" style="margin-top: 10px;">
+                    🌐 Pesquisar na Web
+                </button>
             </div>
         </div>
     `;
@@ -460,7 +641,24 @@ function showAddToDatabaseForm(code) {
     resultDiv.classList.add('active');
 }
 
-// ========== FUNÇÕES DE SALVAMENTO ==========
+function showErrorResult(title, message) {
+    const resultDiv = document.getElementById('result');
+    
+    resultDiv.innerHTML = `
+        <div class="no-results">
+            <div class="no-results-icon">⚠️</div>
+            <h3 style="color: #6b7280; margin-bottom: 10px;">${title}</h3>
+            <p style="color: #9ca3af; font-size: 14px;">${message}</p>
+            <button class="btn" onclick="searchManual()" style="margin-top: 20px;">
+                🔄 Tentar novamente
+            </button>
+        </div>
+    `;
+    
+    resultDiv.classList.add('active');
+}
+
+// ========== FUNÇÕES DE CRUD ==========
 async function saveExternalProductToDatabase(code, name, brand, image, price, source) {
     const productData = {
         ean: code,
@@ -476,144 +674,134 @@ async function saveExternalProductToDatabase(code, name, brand, image, price, so
     const result = await saveToGoogleSheets(productData);
     
     if (result.success) {
-        updateStatus('✅ Produto salvo no banco local!', 'success');
-        // Aguardar um momento e buscar novamente para mostrar do banco
-        setTimeout(() => {
-            searchProduct(code);
-        }, 1500);
+        updateStatus('Produto salvo no banco local!', 'success');
+        setTimeout(() => searchProduct(code), 1000);
     } else {
-        updateStatus(`❌ Erro ao salvar: ${result.error || result.message}`, 'error');
+        updateStatus(`Erro ao salvar: ${result.error || result.message}`, 'error');
     }
 }
 
-async function saveNewProduct(code) {
-    const nome = document.getElementById('newNome').value.trim();
-    const marca = document.getElementById('newMarca').value.trim();
-    const imagem = document.getElementById('newImagem').value.trim();
-    const preco = document.getElementById('newPreco').value.trim();
-    
-    if (!nome) {
-        showAlert('Por favor, informe o nome do produto', 'warning');
+async function deleteProduct(ean, linha) {
+    if (!confirm(`Tem certeza que deseja excluir o produto ${ean}?`)) {
         return;
     }
     
-    const productData = {
-        ean: code,
-        nome: nome,
-        marca: marca,
-        imagem: imagem,
-        preco: preco,
-        fonte: 'Manual'
-    };
+    updateStatus('Excluindo produto...', 'scanning');
     
-    updateStatus('Salvando produto...', 'scanning');
-    
-    const result = await saveToGoogleSheets(productData);
+    const result = await deleteFromGoogleSheets(ean, linha);
     
     if (result.success) {
-        updateStatus('✅ Produto salvo no banco local!', 'success');
-        setTimeout(() => searchProduct(code), 1000);
+        updateStatus('Produto excluído do banco local!', 'success');
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = `
+            <div class="no-results">
+                <div class="no-results-icon">🗑️</div>
+                <h3 style="color: #6b7280; margin-bottom: 10px;">Produto excluído</h3>
+                <p style="color: #9ca3af; font-size: 14px;">
+                    Código: <strong>${ean}</strong>
+                </p>
+            </div>
+        `;
     } else {
-        updateStatus(`❌ Erro ao salvar: ${result.error || result.message}`, 'error');
+        updateStatus(`Erro ao excluir: ${result.error || result.message}`, 'error');
     }
 }
 
-function editExternalProduct(code, name, brand, image, price, source) {
-    currentProduct = { ean: code, source };
+// ========== MODAL FUNCTIONS ==========
+function openEditModal(ean, nome, marca, imagem, preco, linha) {
+    currentEditProduct = { ean, linha };
     
-    document.getElementById('editNome').value = decodeURIComponent(name);
-    document.getElementById('editMarca').value = decodeURIComponent(brand);
-    document.getElementById('editImagem').value = decodeURIComponent(image);
-    document.getElementById('editPreco').value = decodeURIComponent(price);
-    
-    // Mudar o botão de salvar para salvar produto externo
-    const saveBtn = document.getElementById('saveEditBtn');
-    saveBtn.onclick = () => saveEditedExternalProduct();
+    document.getElementById('productEan').value = ean;
+    document.getElementById('productNome').value = decodeURIComponent(nome);
+    document.getElementById('productMarca').value = decodeURIComponent(marca);
+    document.getElementById('productImagem').value = decodeURIComponent(imagem);
+    document.getElementById('productPreco').value = decodeURIComponent(preco);
     
     document.getElementById('editModal').classList.add('active');
 }
 
-async function saveEditedExternalProduct() {
-    const nome = document.getElementById('editNome').value.trim();
-    const marca = document.getElementById('editMarca').value.trim();
-    const imagem = document.getElementById('editImagem').value.trim();
-    const preco = document.getElementById('editPreco').value.trim();
+function openManualAddModal(code) {
+    currentEditProduct = { ean: code };
+    
+    document.getElementById('productEan').value = code;
+    document.getElementById('productNome').value = '';
+    document.getElementById('productMarca').value = '';
+    document.getElementById('productImagem').value = '';
+    document.getElementById('productPreco').value = '';
+    
+    document.getElementById('editModal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('editModal').classList.remove('active');
+    currentEditProduct = null;
+}
+
+async function saveProductToDatabase() {
+    const nome = document.getElementById('productNome').value.trim();
+    const marca = document.getElementById('productMarca').value.trim();
+    const imagem = document.getElementById('productImagem').value.trim();
+    const preco = document.getElementById('productPreco').value.trim();
+    const ean = document.getElementById('productEan').value.trim();
     
     if (!nome) {
-        showAlert('Por favor, informe o nome do produto', 'warning');
+        alert('Por favor, informe o nome do produto');
         return;
     }
     
-    if (!currentProduct) return;
+    if (!ean) {
+        alert('Código EAN não encontrado');
+        return;
+    }
     
     const productData = {
-        ean: currentProduct.ean,
+        ean: ean,
         nome: nome,
         marca: marca,
         imagem: imagem,
         preco: preco,
-        fonte: currentProduct.source || 'API Externa'
+        fonte: currentEditProduct && currentEditProduct.linha ? 'Editado' : 'Manual'
     };
     
-    updateStatus('Salvando produto editado...', 'scanning');
+    if (currentEditProduct && currentEditProduct.linha) {
+        productData.linha = currentEditProduct.linha;
+    }
     
-    const result = await saveToGoogleSheets(productData);
+    updateStatus('Salvando produto...', 'scanning');
+    
+    const result = currentEditProduct && currentEditProduct.linha ? 
+        await updateInGoogleSheets(productData) : 
+        await saveToGoogleSheets(productData);
     
     if (result.success) {
-        updateStatus('✅ Produto salvo no banco local!', 'success');
+        updateStatus('Produto salvo com sucesso!', 'success');
         closeModal();
-        setTimeout(() => searchProduct(currentProduct.ean), 1000);
+        setTimeout(() => searchProduct(ean), 1000);
     } else {
-        updateStatus(`❌ Erro ao salvar: ${result.error || result.message}`, 'error');
+        updateStatus(`Erro ao salvar: ${result.error || result.message}`, 'error');
     }
-}
-
-// ========== SCANNER FUNCTIONS ==========
-function onScanSuccess(decodedText, decodedResult) {
-    const now = Date.now();
-    const code = decodedText.trim();
-    
-    if (!isValidBarcode(code)) return;
-    if (code === lastScanned && (now - lastScanTime) < 2000) return;
-    
-    lastScanned = code;
-    lastScanTime = now;
-    
-    updateStatus(`📷 Código detectado: ${code}`, 'success');
-    
-    if (html5QrCode) html5QrCode.pause();
-    
-    // Atualizar campo de entrada manual
-    document.getElementById('manualCode').value = code;
-    
-    // Iniciar busca
-    searchProduct(code);
-    
-    setTimeout(() => {
-        if (html5QrCode && isScanning) {
-            html5QrCode.resume();
-            updateStatus('Pronto para escanear novamente...', 'scanning');
-        }
-    }, 3000);
 }
 
 // ========== FUNÇÕES AUXILIARES ==========
+function searchOnline(code, name = '') {
+    const query = name ? `${decodeURIComponent(name)} ${code}` : `EAN ${code}`;
+    window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop`, '_blank');
+}
+
 function updateStatus(message, type = 'default') {
     const statusDiv = document.getElementById('status');
-    const icon = getStatusIcon(type);
+    
+    let icon = '';
+    switch(type) {
+        case 'success': icon = '✅'; break;
+        case 'error': icon = '❌'; break;
+        case 'warning': icon = '⚠️'; break;
+        case 'scanning': icon = '<div class="loading"></div>'; break;
+        default: icon = 'ℹ️';
+    }
     
     statusDiv.innerHTML = `${icon} ${message}`;
     statusDiv.className = `status ${type}`;
-}
-
-function getStatusIcon(type) {
-    switch(type) {
-        case 'success': return '<i class="fas fa-check-circle"></i>';
-        case 'error': return '<i class="fas fa-times-circle"></i>';
-        case 'warning': return '<i class="fas fa-exclamation-triangle"></i>';
-        case 'scanning': return '<div class="loading"></div>';
-        default: return '<i class="fas fa-info-circle"></i>';
-    }
 }
 
 function clearResult() {
@@ -622,59 +810,24 @@ function clearResult() {
     resultDiv.classList.remove('active');
 }
 
-function showErrorResult(title, message) {
-    const resultDiv = document.getElementById('result');
-    resultDiv.innerHTML = `
-        <div class="no-results">
-            <div class="no-results-icon">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <h3>${title}</h3>
-            <p>${message}</p>
-            <button class="btn" onclick="searchManual()" style="margin-top: 20px;">
-                <i class="fas fa-redo"></i> Tentar novamente
-            </button>
-        </div>
-    `;
-    resultDiv.classList.add('active');
-}
-
-function isValidBarcode(code) {
-    if (!/^\d+$/.test(code)) return false;
-    if (code.length < 8 || code.length > 13) return false;
-    if (code.length === 13) return validateEAN13(code);
-    return true;
-}
-
-function validateEAN13(code) {
-    let sum = 0;
-    for (let i = 0; i < 12; i++) {
-        const digit = parseInt(code[i]);
-        sum += digit * (i % 2 === 0 ? 1 : 3);
-    }
-    const checksum = (10 - (sum % 10)) % 10;
-    return checksum === parseInt(code[12]);
-}
-
-// ========== FUNÇÕES GLOBAIS (para onclick) ==========
-window.searchManual = searchManual;
-window.searchOnline = function(code, name = '') {
-    const query = name ? `${decodeURIComponent(name)} ${code}` : `EAN ${code}`;
-    window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop`, '_blank');
-};
-window.handleImageError = function(img) {
+function handleImageError(img) {
     img.onerror = null;
     img.parentElement.innerHTML = `
-        <div class="no-image">
-            <i class="fas fa-image"></i>
-            <span>Imagem não carregada</span>
+        <div style="padding: 40px; text-align: center; color: #6b7280;">
+            📷 Imagem não carregada
         </div>
     `;
-};
+}
 
-// As funções do scanner e modal permanecem iguais do código anterior
-// (initScanner, stopScanner, openEditModal, closeModal, etc.)
-// ... [mantenha o restante das funções do scanner e modal do código anterior]
-
-// Para simplificar, mantenho apenas as funções essenciais aqui
-// O restante do código do scanner pode ser copiado do código anterior
+// ========== EXPORT FUNCTIONS TO GLOBAL SCOPE ==========
+window.searchManual = searchManual;
+window.initScanner = initScanner;
+window.stopScanner = stopScanner;
+window.searchOnline = searchOnline;
+window.openEditModal = openEditModal;
+window.openManualAddModal = openManualAddModal;
+window.closeModal = closeModal;
+window.saveProductToDatabase = saveProductToDatabase;
+window.deleteProduct = deleteProduct;
+window.saveExternalProductToDatabase = saveExternalProductToDatabase;
+window.handleImageError = handleImageError;
