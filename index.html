@@ -14,46 +14,57 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a1a;
-            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            padding: 10px;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
         }
 
         .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 25px;
             text-align: center;
-            margin: 10px 0 20px;
-            width: 100%;
-            max-width: 500px;
         }
 
         .header h1 {
             font-size: 24px;
-            color: #4CAF50;
             margin-bottom: 5px;
         }
 
         .header p {
-            color: #ccc;
+            opacity: 0.9;
             font-size: 14px;
+        }
+
+        .content {
+            padding: 25px;
         }
 
         .scanner-container {
             position: relative;
-            width: 100%;
-            max-width: 500px;
-            border-radius: 15px;
+            border-radius: 12px;
             overflow: hidden;
+            margin: 20px 0;
             background: #000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            margin-bottom: 20px;
+            min-height: 300px;
+            display: none;
         }
 
         #reader {
             width: 100% !important;
+            min-height: 300px;
         }
 
         .scanner-overlay {
@@ -64,19 +75,19 @@
             height: 100%;
             pointer-events: none;
             z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .focus-frame {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             width: 80%;
-            height: 150px;
-            border: 3px solid #4CAF50;
+            height: 120px;
+            border: 4px solid #00ff00;
             border-radius: 10px;
-            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.6),
-                        0 0 20px rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5),
+                        0 0 20px rgba(0, 255, 0, 0.5);
+            position: relative;
         }
 
         .scan-line {
@@ -87,9 +98,9 @@
             height: 3px;
             background: linear-gradient(90deg, 
                 transparent 0%, 
-                #4CAF50 50%, 
+                #00ff00 50%, 
                 transparent 100%);
-            animation: scan 1.5s ease-in-out infinite;
+            animation: scan 2s ease-in-out infinite;
         }
 
         @keyframes scan {
@@ -98,82 +109,62 @@
         }
 
         .controls {
-            width: 100%;
-            max-width: 500px;
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin: 20px 0;
         }
 
         .btn {
             flex: 1;
-            padding: 15px;
+            padding: 16px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
         }
 
-        .btn-start {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .btn-start:hover {
-            background: #45a049;
+        .btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
         }
 
         .btn-stop {
-            background: #f44336;
-            color: white;
-        }
-
-        .btn-stop:hover {
-            background: #d32f2f;
-            transform: translateY(-2px);
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
         }
 
         .status {
-            width: 100%;
-            max-width: 500px;
-            padding: 15px;
-            background: #2a2a2a;
-            border-radius: 10px;
-            margin-bottom: 20px;
             text-align: center;
+            padding: 15px;
+            background: #f3f4f6;
+            border-radius: 10px;
+            margin: 15px 0;
             font-size: 14px;
-            border-left: 4px solid #4CAF50;
+            color: #4b5563;
         }
 
         .status.scanning {
-            border-left-color: #4CAF50;
-            background: #1b5e20;
+            background: #d1fae5;
+            color: #065f46;
         }
 
         .status.detected {
-            border-left-color: #2196F3;
-            background: #0d47a1;
-        }
-
-        .status.error {
-            border-left-color: #f44336;
-            background: #b71c1c;
+            background: #dbeafe;
+            color: #1e40af;
         }
 
         .result {
-            width: 100%;
-            max-width: 500px;
-            background: #2a2a2a;
-            border-radius: 10px;
+            background: #f9fafb;
+            border-radius: 12px;
             padding: 20px;
-            margin-bottom: 20px;
+            margin-top: 20px;
             display: none;
         }
 
@@ -194,8 +185,8 @@
         .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #444;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         .info-row:last-child {
@@ -203,36 +194,72 @@
         }
 
         .info-label {
-            color: #aaa;
-            font-weight: 500;
+            font-weight: 600;
+            color: #4b5563;
         }
 
         .info-value {
-            color: white;
+            color: #111827;
             text-align: right;
             max-width: 60%;
-            font-weight: 500;
         }
 
         .product-image {
             width: 100%;
-            max-height: 180px;
+            max-height: 200px;
             object-fit: contain;
             border-radius: 8px;
             margin-bottom: 15px;
-            background: #1a1a1a;
+            background: #f5f5f5;
             padding: 10px;
+        }
+
+        .torch-control {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 20;
+        }
+
+        .torch-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .torch-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .counter {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            z-index: 20;
         }
 
         .loading {
             text-align: center;
             padding: 20px;
-            color: #4CAF50;
+            color: #666;
         }
 
         .loading-spinner {
-            border: 3px solid #333;
-            border-top: 3px solid #4CAF50;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -245,19 +272,17 @@
             100% { transform: rotate(360deg); }
         }
 
-        .last-scanned {
-            width: 100%;
-            max-width: 500px;
-            background: #2a2a2a;
-            border-radius: 10px;
+        .history {
+            margin-top: 20px;
             padding: 15px;
-            margin-top: 10px;
+            background: #f0f9ff;
+            border-radius: 10px;
         }
 
-        .last-scanned h3 {
-            color: #4CAF50;
+        .history h3 {
+            font-size: 14px;
+            color: #0369a1;
             margin-bottom: 10px;
-            font-size: 16px;
         }
 
         .code-list {
@@ -267,93 +292,68 @@
         }
 
         .code-badge {
-            background: #1a1a1a;
-            color: #4CAF50;
+            background: white;
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 12px;
             cursor: pointer;
-            border: 1px solid #4CAF50;
+            border: 1px solid #bae6fd;
             transition: all 0.2s;
         }
 
         .code-badge:hover {
-            background: #4CAF50;
+            background: #0ea5e9;
             color: white;
-        }
-
-        .counter {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(0,0,0,0.7);
-            color: #4CAF50;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 12px;
-            z-index: 20;
-        }
-
-        .torch-btn {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 20px;
-            cursor: pointer;
-            z-index: 20;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .torch-btn:hover {
-            background: rgba(76, 175, 80, 0.7);
+            transform: translateY(-2px);
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🔍 Scanner Automático</h1>
-        <p>Aponte para qualquer código de barras - a leitura é automática!</p>
-    </div>
+    <div class="container">
+        <div class="header">
+            <h1>📦 Scanner Automático</h1>
+            <p>Câmera traseira • Leitura contínua • Só para quando você quiser</p>
+        </div>
 
-    <div class="scanner-container">
-        <div id="reader"></div>
-        <div class="scanner-overlay">
-            <div class="focus-frame">
-                <div class="scan-line"></div>
+        <div class="content">
+            <!-- Controles -->
+            <div class="controls">
+                <button class="btn" id="startBtn" onclick="startScanner()">
+                    ▶️ Iniciar Scanner
+                </button>
+                <button class="btn btn-stop" id="stopBtn" onclick="stopScanner()" style="display: none;">
+                    ⏹️ Parar Scanner
+                </button>
+            </div>
+
+            <!-- Container do scanner -->
+            <div class="scanner-container" id="scannerContainer">
+                <div id="reader"></div>
+                <div class="scanner-overlay">
+                    <div class="focus-frame">
+                        <div class="scan-line"></div>
+                    </div>
+                </div>
+                <div class="counter" id="counter">0 códigos</div>
+                <div class="torch-control">
+                    <button class="torch-btn" id="torchBtn" onclick="toggleTorch()">🔦</button>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="status" id="status">
+                Pronto para iniciar
+            </div>
+
+            <!-- Resultado -->
+            <div class="result" id="result"></div>
+
+            <!-- Histórico -->
+            <div class="history" id="history" style="display: none;">
+                <h3>📋 Últimos códigos lidos (clique para ver):</h3>
+                <div class="code-list" id="codeList"></div>
             </div>
         </div>
-        <div class="counter" id="counter">0 códigos</div>
-        <button class="torch-btn" id="torchBtn" onclick="toggleTorch()">🔦</button>
-    </div>
-
-    <div class="controls">
-        <button class="btn btn-start" id="startBtn" onclick="startScanner()">
-            ▶️ Iniciar Scanner
-        </button>
-        <button class="btn btn-stop" id="stopBtn" onclick="stopScanner()" style="display: none;">
-            ⏹️ Parar Scanner
-        </button>
-    </div>
-
-    <div class="status" id="status">
-        Clique em "Iniciar Scanner" para começar
-    </div>
-
-    <div class="result" id="result">
-        <!-- Resultados aparecem aqui -->
-    </div>
-
-    <div class="last-scanned" id="lastScanned" style="display: none;">
-        <h3>📋 Últimos Códigos Lidos:</h3>
-        <div class="code-list" id="codeList"></div>
     </div>
 
     <script>
@@ -362,34 +362,31 @@
         let isScanning = false;
         let scanCount = 0;
         let scannedCodes = [];
+        let productCache = {};
         let lastDetectedCode = '';
         let detectionCooldown = false;
-        
-        // Cache de produtos para evitar buscas repetidas
-        let productCache = {};
 
-        // Iniciar scanner (SOMENTE câmera traseira)
+        // Iniciar scanner com câmera traseira fixa
         async function startScanner() {
             if (isScanning) return;
             
             try {
                 const status = document.getElementById('status');
-                status.textContent = '🔄 Ativando câmera traseira...';
+                status.textContent = '🔄 Iniciando câmera traseira...';
                 status.className = 'status scanning';
                 
-                // Mostrar botão de parar, esconder botão de iniciar
+                // Mostrar controles
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('stopBtn').style.display = 'flex';
+                document.getElementById('scannerContainer').style.display = 'block';
+                document.getElementById('history').style.display = 'block';
                 
-                // Mostrar histórico
-                document.getElementById('lastScanned').style.display = 'block';
-                
-                // Configuração do scanner
+                // Configuração do scanner HTML5
                 const config = {
-                    fps: 30, // Alta taxa de quadros para detecção rápida
+                    fps: 30, // Alta taxa para leitura rápida
                     qrbox: { 
-                        width: 280, 
-                        height: 160 // Área maior para melhor detecção
+                        width: 250, 
+                        height: 150 
                     },
                     rememberLastUsedCamera: true,
                     supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
@@ -399,15 +396,14 @@
                         Html5QrcodeSupportedFormats.UPC_A,
                         Html5QrcodeSupportedFormats.UPC_E,
                         Html5QrcodeSupportedFormats.CODE_128,
-                        Html5QrcodeSupportedFormats.CODE_39,
-                        Html5QrcodeSupportedFormats.CODE_93
+                        Html5QrcodeSupportedFormats.CODE_39
                     ]
                 };
                 
                 // Criar instância do scanner
                 html5QrCode = new Html5Qrcode("reader");
                 
-                // FORÇAR câmera traseira
+                // FORÇAR câmera traseira apenas
                 const cameraConfig = { facingMode: "environment" };
                 
                 // Iniciar scanner
@@ -419,59 +415,65 @@
                 );
                 
                 isScanning = true;
-                status.textContent = '✅ Scanner ativo! Aponte para um código de barras...';
+                status.textContent = '✅ Scanner ativo! Aponte para qualquer código...';
                 
             } catch (error) {
                 console.error('Erro ao iniciar scanner:', error);
-                document.getElementById('status').className = 'status error';
+                document.getElementById('status').className = 'status';
                 document.getElementById('status').textContent = `❌ Erro: ${error.message}`;
                 stopScanner();
             }
         }
 
-        // Sucesso na detecção - LEITURA CONTÍNUA
+        // Função de detecção - LEITURA CONTÍNUA
         function onScanSuccess(decodedText, decodedResult) {
             const code = decodedText.trim();
-            const now = Date.now();
             
-            // Ignorar se não for um código válido
+            // Validar código
             if (!isValidBarcode(code)) {
                 return;
             }
             
-            // Cooldown para evitar detecções múltiplas do mesmo código
+            // Evitar detecções repetidas do mesmo código
             if (detectionCooldown && code === lastDetectedCode) {
                 return;
             }
             
-            // Atualizar último código detectado
             lastDetectedCode = code;
-            
-            // Ativar cooldown de 500ms para o mesmo código
             detectionCooldown = true;
             setTimeout(() => {
                 detectionCooldown = false;
-            }, 500);
+            }, 500); // Cooldown de 500ms
             
             // Atualizar contador
             scanCount++;
             document.getElementById('counter').textContent = `${scanCount} códigos`;
             
-            // Adicionar ao histórico (máximo 10)
+            // Adicionar ao histórico
             if (!scannedCodes.includes(code)) {
                 scannedCodes.unshift(code);
-                if (scannedCodes.length > 10) {
+                if (scannedCodes.length > 8) {
                     scannedCodes.pop();
                 }
-                updateCodeList();
+                updateHistory();
             }
             
-            // Feedback visual rápido
+            // Feedback visual
             const status = document.getElementById('status');
             status.className = 'status detected';
             status.textContent = `✅ Detectado: ${code}`;
             
-            // Buscar produto (se ainda não estiver no cache)
+            // Efeito visual no scanner
+            const focusFrame = document.querySelector('.focus-frame');
+            focusFrame.style.borderColor = '#2196F3';
+            focusFrame.style.boxShadow = '0 0 0 1000px rgba(0, 0, 0, 0.6), 0 0 30px rgba(33, 150, 243, 0.7)';
+            
+            setTimeout(() => {
+                focusFrame.style.borderColor = '#00ff00';
+                focusFrame.style.boxShadow = '0 0 0 1000px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 0, 0.5)';
+            }, 300);
+            
+            // Buscar produto se não estiver no cache
             if (!productCache[code]) {
                 searchProduct(code);
             } else {
@@ -479,32 +481,24 @@
                 showCachedProduct(code);
             }
             
-            // Feedback visual no scanner
-            const focusFrame = document.querySelector('.focus-frame');
-            focusFrame.style.borderColor = '#2196F3';
-            focusFrame.style.boxShadow = '0 0 0 1000px rgba(0, 0, 0, 0.6), 0 0 30px rgba(33, 150, 243, 0.7)';
-            
-            setTimeout(() => {
-                focusFrame.style.borderColor = '#4CAF50';
-                focusFrame.style.boxShadow = '0 0 0 1000px rgba(0, 0, 0, 0.6), 0 0 20px rgba(76, 175, 80, 0.5)';
-            }, 300);
+            // NÃO PAUSA O SCANNER - continua lendo automaticamente
         }
 
-        // Erro na leitura (ignorar erros comuns)
+        // Erro na leitura
         function onScanError(error) {
-            // Apenas logar erros não comuns
+            // Ignorar erros comuns de "nenhum código encontrado"
             if (!error.includes("No MultiFormat Readers")) {
-                console.log('Scan error:', error);
+                console.log('Erro de scan:', error);
             }
         }
 
         // Validar código de barras
         function isValidBarcode(code) {
-            // Aceitar códigos de 8 a 13 dígitos numéricos
+            // Aceitar códigos de 8 a 13 dígitos
             return /^\d{8,13}$/.test(code);
         }
 
-        // Parar scanner (só quando o usuário clicar)
+        // Parar scanner (só quando usuário clicar)
         async function stopScanner() {
             if (!isScanning) return;
             
@@ -514,24 +508,24 @@
                     html5QrCode.clear();
                 }
             } catch (error) {
-                console.log('Erro ao parar:', error);
+                console.log('Erro ao parar scanner:', error);
             }
             
-            // Resetar estado
             isScanning = false;
             html5QrCode = null;
             
-            // Mostrar botão de iniciar, esconder botão de parar
+            // Restaurar controles
             document.getElementById('startBtn').style.display = 'flex';
             document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('scannerContainer').style.display = 'none';
             
             // Atualizar status
             document.getElementById('status').className = 'status';
             document.getElementById('status').textContent = 'Scanner parado. Clique para iniciar novamente.';
         }
 
-        // Atualizar lista de códigos
-        function updateCodeList() {
+        // Atualizar histórico
+        function updateHistory() {
             const codeList = document.getElementById('codeList');
             codeList.innerHTML = '';
             
@@ -564,31 +558,24 @@
                     torchBtn.textContent = track.getSettings().torch ? '💡' : '🔦';
                 }
             } catch (error) {
-                console.log('Lanterna não disponível:', error);
+                console.log('Lanterna não suportada:', error);
             }
         }
 
         // Buscar produto na API
         async function searchProduct(code) {
-            // Mostrar loading
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = `
                 <div class="loading">
                     <div class="loading-spinner"></div>
-                    <div>Buscando informações para:</div>
-                    <div style="margin-top: 5px; font-weight: bold;">${code}</div>
+                    <div>Buscando produto...</div>
+                    <div style="margin-top: 5px; font-size: 12px; color: #666;">${code}</div>
                 </div>
             `;
             resultDiv.classList.add('active');
             
-            // Verificar cache primeiro
-            if (productCache[code]) {
-                showCachedProduct(code);
-                return;
-            }
-            
             try {
-                // Usar proxy para evitar CORS
+                // Usar proxy para CORS
                 const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
                 
@@ -613,7 +600,7 @@
                 
             } catch (error) {
                 console.error('Erro na busca:', error);
-                showProductError(code, error.message);
+                showProductError(code);
             }
         }
 
@@ -653,7 +640,7 @@
                         <span class="info-value">${code}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">🏷️ Nome:</span>
+                        <span class="info-label">🏷️ Produto:</span>
                         <span class="info-value">${productName}</span>
                     </div>
                     <div class="info-row">
@@ -669,13 +656,6 @@
                         <span class="info-label">📂 Categoria:</span>
                         <span class="info-value">${product.categories.split(',')[0]}</span>
                     </div>` : ''}
-                    ${product.nutriscore_grade ? `
-                    <div class="info-row">
-                        <span class="info-label">🥗 Nutri-Score:</span>
-                        <span class="info-value" style="color: #4CAF50; font-weight: bold;">
-                            ${product.nutriscore_grade.toUpperCase()}
-                        </span>
-                    </div>` : ''}
                 </div>
             `;
         }
@@ -690,13 +670,13 @@
                         <span class="info-value">${code}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label" style="color: #f44336;">❌ Status:</span>
-                        <span class="info-value" style="color: #f44336;">Produto não encontrado</span>
+                        <span class="info-label">❌ Status:</span>
+                        <span class="info-value" style="color: #ef4444;">Produto não encontrado</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">💡 Dica:</span>
-                        <span class="info-value" style="color: #ccc;">
-                            Este código não está na base Open Food Facts
+                        <span class="info-value" style="color: #666;">
+                            Tente códigos como: 7891000315507 (Nescau)
                         </span>
                     </div>
                 </div>
@@ -704,7 +684,7 @@
         }
 
         // Mostrar erro
-        function showProductError(code, errorMsg) {
+        function showProductError(code) {
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = `
                 <div class="product-info">
@@ -713,16 +693,16 @@
                         <span class="info-value">${code}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label" style="color: #ff9800;">⚠️ Erro:</span>
-                        <span class="info-value" style="color: #ff9800;">
-                            ${errorMsg || 'Erro na conexão'}
+                        <span class="info-label">⚠️ Erro:</span>
+                        <span class="info-value" style="color: #f59e0b;">
+                            Falha na conexão com a API
                         </span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">🔄 Ação:</span>
                         <span class="info-value">
                             <button onclick="searchProduct('${code}')" 
-                                    style="background: #4CAF50; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
+                                    style="background: #4f46e5; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
                                 Tentar Novamente
                             </button>
                         </span>
@@ -731,8 +711,7 @@
             `;
         }
 
-        // Iniciar automaticamente ao carregar a página?
-        // Descomente a linha abaixo se quiser que inicie automaticamente:
+        // Iniciar automaticamente se quiser (descomente)
         // window.addEventListener('load', startScanner);
     </script>
 </body>
