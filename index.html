@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner de Códigos de Barras</title>
+    <title>Scanner de Códigos</title>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * {
@@ -207,7 +207,6 @@
             padding: 0;
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
         }
 
         .product-image-container {
@@ -218,13 +217,13 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            padding: 20px;
         }
 
         .product-image {
-            width: 100%;
-            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
             object-fit: contain;
-            padding: 20px;
         }
 
         .product-details {
@@ -239,100 +238,35 @@
             line-height: 1.4;
         }
 
-        .product-price {
-            font-size: 24px;
-            font-weight: 700;
-            color: #10b981;
+        .product-brand {
+            display: inline-block;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
             margin-bottom: 15px;
         }
 
-        .product-info {
-            margin-top: 15px;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #4b5563;
-            font-size: 14px;
-        }
-
-        .info-value {
-            color: #111827;
-            text-align: right;
-            max-width: 60%;
-            font-size: 14px;
-        }
-
-        .stores-list {
-            margin-top: 20px;
-        }
-
-        .store-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            transition: all 0.2s;
-        }
-
-        .store-item:hover {
-            border-color: #4f46e5;
-            transform: translateY(-2px);
-        }
-
-        .store-logo {
-            width: 40px;
-            height: 40px;
-            border-radius: 6px;
-            object-fit: cover;
-            margin-right: 12px;
-            background: #f3f4f6;
-            padding: 5px;
-        }
-
-        .store-info {
-            flex: 1;
-        }
-
-        .store-name {
-            font-weight: 600;
-            color: #111827;
-            font-size: 14px;
-        }
-
-        .store-price {
-            color: #10b981;
-            font-weight: 600;
+        .product-code {
+            font-family: monospace;
             font-size: 16px;
-        }
-
-        .store-link {
-            color: #4f46e5;
-            text-decoration: none;
-            font-size: 14px;
-            padding: 6px 12px;
-            border: 1px solid #4f46e5;
+            color: #6b7280;
+            margin-bottom: 15px;
+            padding: 8px;
+            background: #f3f4f6;
             border-radius: 6px;
-            transition: all 0.2s;
+            text-align: center;
         }
 
-        .store-link:hover {
-            background: #4f46e5;
-            color: white;
+        .source-badge {
+            display: inline-block;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-top: 15px;
         }
 
         .hidden {
@@ -364,41 +298,26 @@
             color: #0369a1;
         }
 
-        .source-badge {
-            display: inline-block;
-            background: #e0f2fe;
-            color: #0369a1;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-top: 10px;
-        }
-
-        .image-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #9ca3af;
-            font-size: 14px;
-        }
-
-        .no-image {
-            text-align: center;
-            padding: 40px 20px;
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .search-actions {
+        .api-actions {
             display: flex;
             gap: 10px;
             margin-top: 20px;
         }
 
-        .search-actions .btn {
+        .api-actions .btn {
             margin-bottom: 0;
+            flex: 1;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .no-results-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #9ca3af;
         }
     </style>
 </head>
@@ -406,7 +325,7 @@
     <div class="container">
         <div class="header">
             <h1>🔍 Scanner Inteligente</h1>
-            <p>Escaneie código → Veja produto e preços</p>
+            <p>EAN → Descrição + Imagem + Marca</p>
         </div>
 
         <div class="content">
@@ -421,11 +340,11 @@
             </div>
 
             <button class="btn" id="startBtn" onclick="initScanner()">
-                📷 Abrir Scanner de Câmera
+                📷 Abrir Scanner
             </button>
 
             <div class="camera-info hidden" id="cameraInfo">
-                🎥 Usando câmera traseira com auto-foco
+                🎥 Scanner ativo com auto-foco
             </div>
 
             <div class="hidden" id="cameraControls">
@@ -444,7 +363,7 @@
             </div>
 
             <div class="status" id="status">
-                Clique em "Abrir Scanner" para começar
+                Pronto para escanear
             </div>
 
             <div class="result" id="result"></div>
@@ -452,6 +371,10 @@
     </div>
 
     <script>
+        // ========== CONFIGURAÇÕES ==========
+        // COLOQUE SUA CHAVE DA BLUESOFT AQUI:
+        const BLUESOFT_API_KEY = '7tF33vAL9xZs7ZRoSMBitg'; // ← SUBSTITUA por sua chave
+        
         let html5QrCode = null;
         let currentCameraId = null;
         let isScanning = false;
@@ -466,7 +389,7 @@
             
             try {
                 const status = document.getElementById('status');
-                status.innerHTML = '<div class="loading"></div> Iniciando câmera traseira...';
+                status.innerHTML = '<div class="loading"></div> Iniciando scanner...';
                 status.className = 'status scanning';
                 
                 document.getElementById('cameraInfo').classList.remove('hidden');
@@ -489,234 +412,163 @@
                 };
                 
                 html5QrCode = new Html5Qrcode("reader");
-                
                 await new Promise(resolve => setTimeout(resolve, 300));
                 
                 const rearCameraId = await findRearCamera();
                 
                 if (rearCameraId) {
                     currentCameraId = rearCameraId;
-                    
                     const cameraConfig = {
                         ...config,
                         videoConstraints: {
                             deviceId: { exact: rearCameraId },
-                            width: { min: 1280, ideal: 1920, max: 2560 },
-                            height: { min: 720, ideal: 1080, max: 1440 },
-                            frameRate: { ideal: 30, min: 24 },
+                            width: { min: 1280, ideal: 1920 },
+                            height: { min: 720, ideal: 1080 },
+                            frameRate: { ideal: 30 },
                             advanced: [
-                                { focusMode: "continuous" },
-                                { whiteBalanceMode: "continuous" }
+                                { focusMode: "continuous" }
                             ]
                         }
                     };
                     
-                    await html5QrCode.start(
-                        rearCameraId,
-                        cameraConfig,
-                        onScanSuccess,
-                        onScanError
-                    );
-                    
+                    await html5QrCode.start(rearCameraId, cameraConfig, onScanSuccess, onScanError);
                 } else {
-                    const fallbackConfig = {
-                        ...config,
-                        videoConstraints: {
-                            facingMode: { exact: "environment" },
-                            width: { min: 1280, ideal: 1920 },
-                            height: { min: 720, ideal: 1080 },
-                            frameRate: { ideal: 30 },
-                            advanced: [{ focusMode: "continuous" }]
-                        }
-                    };
-                    
-                    await html5QrCode.start(
-                        { facingMode: "environment" },
-                        fallbackConfig,
-                        onScanSuccess,
-                        onScanError
-                    );
-                    
+                    await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanError);
                     currentCameraId = "environment";
                 }
                 
-                status.textContent = '✅ Scanner ativo com auto-foco! Aponte para um código de barras...';
+                status.textContent = '✅ Scanner ativo! Aponte para um código...';
                 status.className = 'status success';
                 isScanning = true;
                 
             } catch (error) {
-                console.error('Erro ao iniciar scanner:', error);
+                console.error('Erro:', error);
                 await handleScannerError(error);
             }
         }
 
-        // ========== SISTEMA DE BUSCA INTELIGENTE ==========
+        // ========== SISTEMA DE BUSCA ==========
         async function searchProduct(code) {
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = `
                 <div class="status scanning">
-                    <div style="margin-bottom: 5px;">🔍 Analisando código ${code}...</div>
-                    <div style="font-size: 12px;">Buscando informações em tempo real</div>
+                    <div style="margin-bottom: 5px;">🔍 Buscando código ${code}</div>
+                    <div style="font-size: 12px;">Consultando bases de dados...</div>
                 </div>
             `;
             resultDiv.classList.add('active');
             
             try {
-                // Primeiro: Tenta Open Food Facts (para alimentos)
+                // 1. PRIMEIRO: Open Food Facts (gratuito)
                 const foodProduct = await searchOpenFoodFacts(code);
-                
                 if (foodProduct) {
-                    // Se encontrou alimento, mostra informações completas
-                    showFoodProductInfo(foodProduct, code);
-                } else {
-                    // Se não é alimento, busca no Google Shopping
-                    const googleProduct = await searchGoogleShopping(code);
-                    
-                    if (googleProduct) {
-                        // Mostra produto do Google Shopping
-                        showGoogleProductInfo(googleProduct, code);
-                    } else {
-                        // Se não encontrou nada, tenta busca geral
-                        showAlternativeSearch(code);
+                    showProductInfo(foodProduct, code, 'Open Food Facts');
+                    return;
+                }
+                
+                // 2. SEGUNDO: EAN Search Gratuito
+                const eanProduct = await searchEanSearch(code);
+                if (eanProduct) {
+                    showProductInfo(eanProduct, code, 'EAN Search');
+                    return;
+                }
+                
+                // 3. TERCEIRO: Bluesoft Cosmos (com token)
+                if (BLUESOFT_API_KEY && BLUESOFT_API_KEY !== '7tF33vAL9xZs7ZRoSMBitg') {
+                    const bluesoftProduct = await searchBluesoftCosmos(code);
+                    if (bluesoftProduct) {
+                        showProductInfo(bluesoftProduct, code, 'Bluesoft Cosmos');
+                        return;
                     }
                 }
                 
+                // 4. Nenhum encontrado
+                showNoResults(code);
+                
             } catch (error) {
-                console.error('Erro na busca:', error);
                 resultDiv.innerHTML = `
                     <div class="status error">
                         ❌ Erro na busca
-                        <div style="font-size: 12px; margin-top: 5px;">${error.message}</div>
+                        <div style="font-size: 12px;">${error.message}</div>
                     </div>
                 `;
             }
         }
 
-        // API 1: Open Food Facts (alimentos)
+        // API 1: Open Food Facts (gratuito)
         async function searchOpenFoodFacts(code) {
             try {
-                // Usar CORS proxy gratuito
                 const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
                 
-                const response = await fetch(proxyUrl + encodeURIComponent(apiUrl), {
-                    timeout: 5000
+                const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
+                if (!response.ok) return null;
+                
+                const data = await response.json();
+                if (data.status === 1 && data.product) {
+                    return {
+                        name: data.product.product_name || 
+                              data.product.product_name_pt || 
+                              data.product.product_name_en || 
+                              'Produto',
+                        brand: data.product.brands || '',
+                        image: data.product.image_front_url || data.product.image_url || null
+                    };
+                }
+                return null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        // API 2: EAN Search Gratuito
+        async function searchEanSearch(code) {
+            try {
+                // Usando token demo gratuito
+                const response = await fetch(`https://api.ean-search.org/api?token=demo&op=barcode-lookup&format=json&ean=${code}`);
+                if (!response.ok) return null;
+                
+                const data = await response.json();
+                if (data && data.length > 0 && data[0].name) {
+                    return {
+                        name: data[0].name,
+                        brand: data[0].vendor || data[0].manufacturer || '',
+                        image: null // EAN Search não fornece imagens
+                    };
+                }
+                return null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        // API 3: Bluesoft Cosmos (com token)
+        async function searchBluesoftCosmos(code) {
+            try {
+                const response = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${code}`, {
+                    headers: {
+                        'X-Cosmos-Token': BLUESOFT_API_KEY,
+                        'Content-Type': 'application/json'
+                    }
                 });
                 
                 if (!response.ok) return null;
                 
                 const data = await response.json();
+                return {
+                    name: data.description || 'Produto',
+                    brand: data.brand?.name || data.brand_name || '',
+                    image: data.thumbnail || null
+                };
                 
-                if (data.status === 1 && data.product) {
-                    return {
-                        type: 'food',
-                        name: data.product.product_name || 
-                              data.product.product_name_pt || 
-                              data.product.product_name_en || 
-                              'Produto Alimentício',
-                        brand: data.product.brands || data.product.brand_owner || '',
-                        image: data.product.image_front_url || data.product.image_url || null,
-                        category: data.product.categories || '',
-                        quantity: data.product.quantity || '',
-                        description: data.product.generic_name || data.product._keywords?.join(', ') || '',
-                        ingredients: data.product.ingredients_text || '',
-                        nutriScore: data.product.nutriscore_grade || '',
-                        stores: data.product.stores || '',
-                        countries: data.product.countries || ''
-                    };
-                }
-                return null;
             } catch (error) {
-                return null;
-            }
-        }
-
-        // API 2: Google Shopping via SerpAPI (GRATUITO - 100 buscas/mês)
-        async function searchGoogleShopping(code) {
-            try {
-                // Chave gratuita do SerpAPI (100 buscas por mês)
-                // Cadastre em: https://serpapi.com/users/sign_up (free tier)
-                const SERPAPI_KEY = 'demo'; // Use 'demo' para testes ou sua chave
-                
-                // Busca no Google Shopping BR
-                const response = await fetch(
-                    `https://serpapi.com/search.json?engine=google_shopping&q=${code}&hl=pt&gl=br&api_key=${SERPAPI_KEY}`
-                );
-                
-                if (!response.ok) return null;
-                
-                const data = await response.json();
-                
-                if (data.shopping_results && data.shopping_results.length > 0) {
-                    const firstResult = data.shopping_results[0];
-                    const allResults = data.shopping_results.slice(0, 5);
-                    
-                    return {
-                        type: 'shopping',
-                        name: firstResult.title || `Produto ${code}`,
-                        image: firstResult.thumbnail || null,
-                        price: firstResult.price || 'Preço não disponível',
-                        currency: firstResult.currency || 'BRL',
-                        source: firstResult.source || '',
-                        link: firstResult.link || `https://www.google.com/search?q=${code}&tbm=shop`,
-                        stores: allResults.map(result => ({
-                            name: result.source || 'Loja Online',
-                            price: result.price || 'Consultar',
-                            link: result.link || '#',
-                            rating: result.rating || null,
-                            reviews: result.reviews || null
-                        }))
-                    };
-                }
-                return null;
-            } catch (error) {
-                console.log('Google Shopping error:', error);
-                return null;
-            }
-        }
-
-        // Alternativa: Busca em múltiplas fontes
-        async function searchAlternative(code) {
-            try {
-                // Tenta várias APIs gratuitas
-                const [eanData, barcodeData] = await Promise.all([
-                    fetch(`https://api.ean-search.org/api?token=demo&op=barcode-lookup&format=json&ean=${code}`)
-                        .then(r => r.ok ? r.json() : null)
-                        .catch(() => null),
-                    
-                    fetch(`https://api.barcodedatabase.com/v1/product/${code}`)
-                        .then(r => r.ok ? r.json() : null)
-                        .catch(() => null)
-                ]);
-                
-                if (eanData && eanData[0]) {
-                    return {
-                        type: 'ean',
-                        name: eanData[0].name || `Produto ${code}`,
-                        brand: eanData[0].vendor || eanData[0].manufacturer || '',
-                        category: eanData[0].category || ''
-                    };
-                }
-                
-                if (barcodeData && barcodeData.product) {
-                    return {
-                        type: 'barcode',
-                        name: barcodeData.product.name || `Produto ${code}`,
-                        brand: barcodeData.product.brand || '',
-                        image: barcodeData.product.image_url || null
-                    };
-                }
-                
-                return null;
-            } catch (error) {
+                console.log('Bluesoft error:', error);
                 return null;
             }
         }
 
         // ========== MOSTRAR RESULTADOS ==========
-
-        // Mostrar produto alimentício
-        function showFoodProductInfo(product, code) {
+        function showProductInfo(product, code, source) {
             const resultDiv = document.getElementById('result');
             
             let imageHtml = '';
@@ -726,33 +578,13 @@
                         <img src="${product.image}" 
                              class="product-image" 
                              alt="${product.name}"
-                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'no-image\\'>🖼️ Imagem não disponível</div>'">
+                             onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\"padding: 40px; text-align: center; color: #6b7280;\">📷 Sem imagem</div>'">
                     </div>
                 `;
             } else {
                 imageHtml = `
-                    <div class="product-image-container">
-                        <div class="no-image">📷 Sem imagem</div>
-                    </div>
-                `;
-            }
-            
-            let nutriScoreHtml = '';
-            if (product.nutriScore) {
-                const scoreColor = {
-                    'a': '#10b981',
-                    'b': '#84cc16',
-                    'c': '#f59e0b',
-                    'd': '#f97316',
-                    'e': '#ef4444'
-                }[product.nutriScore.toLowerCase()] || '#6b7280';
-                
-                nutriScoreHtml = `
-                    <div class="info-row">
-                        <span class="info-label">🏆 Nutri-Score:</span>
-                        <span class="info-value" style="color: ${scoreColor}; font-weight: bold;">
-                            ${product.nutriScore.toUpperCase()}
-                        </span>
+                    <div class="product-image-container" style="color: #6b7280;">
+                        📷 Sem imagem disponível
                     </div>
                 `;
             }
@@ -760,229 +592,84 @@
             resultDiv.innerHTML = `
                 <div class="product-card">
                     ${imageHtml}
+                    
                     <div class="product-details">
+                        <div class="product-code">📦 Código: ${code}</div>
+                        
                         <div class="product-title">${product.name}</div>
                         
-                        <div class="product-info">
-                            <div class="info-row">
-                                <span class="info-label">📦 Código:</span>
-                                <span class="info-value">${code}</span>
-                            </div>
-                            
-                            ${product.brand ? `
-                            <div class="info-row">
-                                <span class="info-label">🏭 Marca:</span>
-                                <span class="info-value">${product.brand}</span>
-                            </div>` : ''}
-                            
-                            ${product.quantity ? `
-                            <div class="info-row">
-                                <span class="info-label">⚖️ Quantidade:</span>
-                                <span class="info-value">${product.quantity}</span>
-                            </div>` : ''}
-                            
-                            ${product.category ? `
-                            <div class="info-row">
-                                <span class="info-label">📂 Categoria:</span>
-                                <span class="info-value">${product.category.split(',').slice(0, 2).join(', ')}</span>
-                            </div>` : ''}
-                            
-                            ${nutriScoreHtml}
-                            
-                            ${product.ingredients ? `
-                            <div class="info-row">
-                                <span class="info-label">🥫 Ingredientes:</span>
-                                <span class="info-value" style="font-size: 12px;">
-                                    ${product.ingredients.substring(0, 50)}${product.ingredients.length > 50 ? '...' : ''}
-                                </span>
-                            </div>` : ''}
-                        </div>
-                        
-                        <div class="source-badge">Fonte: Open Food Facts</div>
-                    </div>
-                </div>
-                
-                <div class="search-actions">
-                    <button class="btn btn-success" onclick="searchGoogleShoppingManual('${code}', '${encodeURIComponent(product.name)}')">
-                        🛒 Ver Preços Online
-                    </button>
-                    <button class="btn" onclick="searchGoogleImages('${code}', '${encodeURIComponent(product.name)}')">
-                        🖼️ Ver Imagens
-                    </button>
-                </div>
-            `;
-        }
-
-        // Mostrar produto do Google Shopping
-        function showGoogleProductInfo(product, code) {
-            const resultDiv = document.getElementById('result');
-            
-            let imageHtml = '';
-            if (product.image) {
-                imageHtml = `
-                    <div class="product-image-container">
-                        <img src="${product.image}" 
-                             class="product-image" 
-                             alt="${product.name}"
-                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'no-image\\'>🖼️ Imagem não disponível</div>'">
-                    </div>
-                `;
-            } else {
-                imageHtml = `
-                    <div class="product-image-container">
-                        <div class="no-image">📷 Sem imagem</div>
-                    </div>
-                `;
-            }
-            
-            // Formatar preço
-            let priceDisplay = product.price;
-            if (typeof product.price === 'string' && product.price.includes('R$')) {
-                priceDisplay = product.price;
-            } else if (product.price !== 'Preço não disponível') {
-                priceDisplay = `R$ ${product.price}`;
-            }
-            
-            resultDiv.innerHTML = `
-                <div class="product-card">
-                    ${imageHtml}
-                    <div class="product-details">
-                        <div class="product-title">${product.name}</div>
-                        <div class="product-price">${priceDisplay}</div>
-                        
-                        <div class="product-info">
-                            <div class="info-row">
-                                <span class="info-label">📦 Código EAN:</span>
-                                <span class="info-value">${code}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">🏪 Fonte:</span>
-                                <span class="info-value">${product.source || 'Google Shopping'}</span>
-                            </div>
-                        </div>
-                        
-                        ${product.stores && product.stores.length > 0 ? `
-                        <div class="stores-list">
-                            <h4 style="font-size: 14px; margin-bottom: 10px; color: #4b5563;">🏪 Disponível em:</h4>
-                            ${product.stores.slice(0, 3).map(store => `
-                                <div class="store-item">
-                                    <div class="store-info">
-                                        <div class="store-name">${store.name}</div>
-                                        <div class="store-price">${store.price || 'Consultar'}</div>
-                                    </div>
-                                    <a href="${store.link}" target="_blank" class="store-link">
-                                        Ver
-                                    </a>
-                                </div>
-                            `).join('')}
-                        </div>
+                        ${product.brand ? `
+                        <div class="product-brand">🏭 ${product.brand}</div>
                         ` : ''}
                         
-                        <div class="source-badge">Fonte: Google Shopping</div>
+                        <div class="source-badge">Fonte: ${source}</div>
                     </div>
                 </div>
                 
-                <div class="search-actions">
-                    <a href="${product.link}" target="_blank" class="btn btn-success">
-                        🛒 Ver Todas as Ofertas
-                    </a>
-                    <button class="btn" onclick="searchGoogleImages('${code}', '${encodeURIComponent(product.name)}')">
-                        🔍 Mais Detalhes
+                <div class="api-actions">
+                    <button class="btn btn-success" onclick="searchOnline('${code}', '${encodeURIComponent(product.name)}')">
+                        🛒 Ver Preços Online
+                    </button>
+                    <button class="btn" onclick="saveProduct('${code}', '${encodeURIComponent(product.name)}')">
+                        💾 Salvar Localmente
                     </button>
                 </div>
             `;
         }
 
-        // Busca alternativa quando não encontra
-        function showAlternativeSearch(code) {
+        function showNoResults(code) {
             const resultDiv = document.getElementById('result');
             
             resultDiv.innerHTML = `
-                <div class="status warning" style="background: #fef3c7; color: #92400e;">
-                    <div style="margin-bottom: 5px;">⚠️ Produto não encontrado automaticamente</div>
-                    <div style="font-size: 12px;">Código: ${code}</div>
-                </div>
-                
-                <div class="product-card">
-                    <div class="product-details">
-                        <div class="product-title">Produto ${code}</div>
-                        <div class="product-info">
-                            <div class="info-row">
-                                <span class="info-label">📦 Código EAN:</span>
-                                <span class="info-value">${code}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">🔍 Status:</span>
-                                <span class="info-value">Não encontrado nas bases</span>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 8px;">
-                            <h4 style="font-size: 14px; margin-bottom: 10px; color: #4b5563;">💡 Como encontrar este produto:</h4>
-                            <ol style="font-size: 13px; color: #6b7280; padding-left: 20px; margin: 0;">
-                                <li style="margin-bottom: 5px;">Use o botão abaixo para buscar no Google</li>
-                                <li style="margin-bottom: 5px;">Pesquise o código em lojas online</li>
-                                <li>Verifique se o código está correto</li>
-                            </ol>
-                        </div>
+                <div class="no-results">
+                    <div class="no-results-icon">🔍</div>
+                    <h3 style="color: #6b7280; margin-bottom: 10px;">Produto não encontrado</h3>
+                    <p style="color: #9ca3af; font-size: 14px; margin-bottom: 20px;">
+                        Código: <strong>${code}</strong><br>
+                        Não encontrado nas bases públicas.
+                    </p>
+                    
+                    <div class="api-actions">
+                        <button class="btn" onclick="searchOnline('${code}')">
+                            🌐 Pesquisar na Web
+                        </button>
+                        <button class="btn btn-success" onclick="addManualProduct('${code}')">
+                            ✏️ Cadastrar Manualmente
+                        </button>
                     </div>
-                </div>
-                
-                <div class="search-actions">
-                    <button class="btn btn-success" onclick="searchGoogleShoppingManual('${code}')">
-                        🔍 Buscar no Google Shopping
-                    </button>
-                    <button class="btn" onclick="searchGoogleImages('${code}')">
-                        🖼️ Buscar Imagens
-                    </button>
-                </div>
-                
-                <div style="margin-top: 20px; padding: 15px; background: #e0f2fe; border-radius: 8px;">
-                    <h4 style="font-size: 14px; margin-bottom: 10px; color: #0369a1;">📝 Cadastrar Manualmente:</h4>
-                    <input type="text" 
-                           id="manualProductName" 
-                           placeholder="Nome do produto"
-                           style="width: 100%; padding: 10px; border: 1px solid #bae6fd; border-radius: 6px; margin-bottom: 10px;">
-                    <button class="btn" onclick="saveManualProduct('${code}')" style="padding: 10px; font-size: 14px;">
-                        💾 Salvar no Sistema
-                    </button>
                 </div>
             `;
         }
 
         // ========== FUNÇÕES AUXILIARES ==========
-
-        // Busca manual no Google Shopping
-        function searchGoogleShoppingManual(code, productName = '') {
-            const query = productName ? `${productName} ${code}` : `EAN ${code}`;
-            window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop`, '_blank');
+        function searchOnline(code, name = '') {
+            const query = name ? `${decodeURIComponent(name)} ${code}` : `EAN ${code}`;
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
         }
 
-        // Busca no Google Imagens
-        function searchGoogleImages(code, productName = '') {
-            const query = productName ? `${productName} ${code}` : `EAN ${code}`;
-            window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=isch`, '_blank');
+        function saveProduct(code, name) {
+            const productName = decodeURIComponent(name);
+            const product = {
+                code: code,
+                name: productName,
+                date: new Date().toISOString()
+            };
+            
+            let savedProducts = JSON.parse(localStorage.getItem('savedProducts') || '[]');
+            savedProducts.push(product);
+            localStorage.setItem('savedProducts', JSON.stringify(savedProducts));
+            
+            alert(`✅ Produto "${productName}" salvo localmente!`);
         }
 
-        // Salvar produto manualmente
-        function saveManualProduct(code) {
-            const name = document.getElementById('manualProductName')?.value.trim();
-            if (!name) {
-                alert('Digite o nome do produto');
-                return;
-            }
-            
-            // Aqui você salvaria no seu banco de dados
-            alert(`✅ Produto "${name}" (${code}) salvo com sucesso!`);
-            
-            // Limpar campo
-            if (document.getElementById('manualProductName')) {
-                document.getElementById('manualProductName').value = '';
+        function addManualProduct(code) {
+            const name = prompt('Digite o nome do produto:', '');
+            if (name) {
+                saveProduct(code, encodeURIComponent(name));
             }
         }
 
         // ========== FUNÇÕES DO SCANNER ==========
-
         async function findRearCamera() {
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
@@ -991,25 +678,18 @@
                 const exactCamera = videoDevices.find(device => 
                     device.label && device.label.includes("camera 0, facing back")
                 );
-                
                 if (exactCamera) return exactCamera.deviceId;
                 
                 const rearCamera = videoDevices.find(device => {
                     if (!device.label) return false;
                     const label = device.label.toLowerCase();
-                    return REAR_CAMERA_KEYWORDS.some(keyword => 
-                        label.includes(keyword.toLowerCase())
-                    );
+                    return REAR_CAMERA_KEYWORDS.some(keyword => label.includes(keyword));
                 });
-                
                 if (rearCamera) return rearCamera.deviceId;
                 
-                if (videoDevices.length > 0) return videoDevices[0].deviceId;
-                
-                return null;
+                return videoDevices[0]?.deviceId || null;
                 
             } catch (error) {
-                console.error("Erro ao encontrar câmera:", error);
                 return null;
             }
         }
@@ -1019,24 +699,22 @@
             const code = decodedText.trim();
             
             if (!isValidBarcode(code)) return;
-            
             if (code === lastScanned && (now - lastScanTime) < 2000) return;
             
             lastScanned = code;
             lastScanTime = now;
             
             const status = document.getElementById('status');
-            status.textContent = `✅ Código detectado: ${code}`;
+            status.textContent = `✅ Código: ${code}`;
             status.className = 'status success';
             
             if (html5QrCode) html5QrCode.pause();
-            
             searchProduct(code);
             
             setTimeout(() => {
                 if (html5QrCode && isScanning) {
                     html5QrCode.resume();
-                    status.textContent = 'Pronto para escanear novamente...';
+                    status.textContent = 'Pronto para escanear...';
                     status.className = 'status scanning';
                 }
             }, 3000);
@@ -1044,7 +722,7 @@
 
         function onScanError(error) {
             if (!error.includes("No MultiFormat Readers")) {
-                console.log('Erro de scan:', error);
+                console.log('Scan error:', error);
             }
         }
 
@@ -1058,11 +736,9 @@
         function validateEAN13(code) {
             let sum = 0;
             for (let i = 0; i < 12; i++) {
-                const digit = parseInt(code[i]);
-                sum += digit * (i % 2 === 0 ? 1 : 3);
+                sum += parseInt(code[i]) * (i % 2 === 0 ? 1 : 3);
             }
-            const checksum = (10 - (sum % 10)) % 10;
-            return checksum === parseInt(code[12]);
+            return ((10 - (sum % 10)) % 10) === parseInt(code[12]);
         }
 
         async function stopScanner() {
@@ -1089,7 +765,7 @@
         function searchManual() {
             const code = document.getElementById('manualCode').value.trim();
             if (!code || code.length < 8) {
-                alert('Digite um código de barras válido (8-13 dígitos)');
+                alert('Digite um código válido (8-13 dígitos)');
                 return;
             }
             searchProduct(code);
@@ -1112,23 +788,11 @@
             status.className = 'status error';
             
             if (error.message.includes('permission')) {
-                status.textContent = '❌ Permissão da câmera negada. Permita o acesso à câmera.';
+                status.textContent = '❌ Permissão da câmera negada.';
             } else if (error.message.includes('NotFoundError')) {
-                status.textContent = '❌ Câmera traseira não disponível.';
-            } else if (error.message.includes('NotSupportedError')) {
-                try {
-                    status.innerHTML = '<div class="loading"></div> Iniciando modo padrão...';
-                    const basicConfig = { fps: 10, qrbox: { width: 250, height: 150 } };
-                    await html5QrCode.start({ facingMode: "environment" }, basicConfig, onScanSuccess, onScanError);
-                    status.textContent = '✅ Scanner ativo (modo padrão)!';
-                    isScanning = true;
-                    currentCameraId = "environment";
-                    return;
-                } catch (e) {
-                    status.textContent = '❌ Falha ao iniciar scanner.';
-                }
+                status.textContent = '❌ Câmera não disponível.';
             } else {
-                status.textContent = '❌ Erro ao iniciar o scanner. Tente novamente.';
+                status.textContent = '❌ Erro. Tente novamente.';
             }
             
             document.getElementById('startBtn').classList.remove('hidden');
