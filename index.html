@@ -269,7 +269,6 @@
         </div>
 
         <div class="content">
-            <!-- Entrada manual -->
             <div class="input-group">
                 <input type="text" 
                        id="manualCode" 
@@ -280,24 +279,20 @@
                 </button>
             </div>
 
-            <!-- Botão do scanner -->
             <button class="btn" id="startBtn" onclick="initScanner()">
                 📷 Abrir Scanner de Câmera
             </button>
 
-            <!-- Informação da câmera fixa -->
             <div class="camera-info hidden" id="cameraInfo">
                 🎥 Usando câmera traseira com auto-foco
             </div>
 
-            <!-- Controles da câmera -->
             <div class="hidden" id="cameraControls">
                 <button class="btn btn-secondary" onclick="stopScanner()">
                     ⏹️ Parar Scanner
                 </button>
             </div>
 
-            <!-- Container do scanner -->
             <div class="scanner-container" id="scannerContainer">
                 <div id="reader"></div>
                 <div class="scanner-overlay">
@@ -307,28 +302,23 @@
                 </div>
             </div>
 
-            <!-- Status -->
             <div class="status" id="status">
                 Clique em "Abrir Scanner" para começar
             </div>
 
-            <!-- Resultado -->
             <div class="result" id="result"></div>
         </div>
     </div>
 
     <script>
-        // Variáveis globais
         let html5QrCode = null;
         let currentCameraId = null;
         let isScanning = false;
         let lastScanned = '';
         let lastScanTime = 0;
 
-        // Palavras-chave para identificar câmera traseira
         const REAR_CAMERA_KEYWORDS = ["back", "rear", "environment", "traseira", "camera 0"];
 
-        // Inicializar o scanner com câmera traseira fixa
         async function initScanner() {
             if (isScanning) return;
             
@@ -337,23 +327,14 @@
                 status.innerHTML = '<div class="loading"></div> Iniciando câmera traseira...';
                 status.className = 'status scanning';
                 
-                // Mostrar informação da câmera
                 document.getElementById('cameraInfo').classList.remove('hidden');
-                
-                // Esconder botão inicial e mostrar controles
                 document.getElementById('startBtn').classList.add('hidden');
                 document.getElementById('cameraControls').classList.remove('hidden');
-                
-                // Mostrar container do scanner
                 document.getElementById('scannerContainer').style.display = 'block';
                 
-                // Configurações otimizadas para câmera traseira
                 const config = {
                     fps: 30,
-                    qrbox: { 
-                        width: 300,
-                        height: 200 
-                    },
+                    qrbox: { width: 300, height: 200 },
                     aspectRatio: 4/3,
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
@@ -365,30 +346,51 @@
                     ]
                 };
                 
-                // Criar instância do scanner
                 html5QrCode = new Html5Qrcode("reader");
                 
-                // Aguardar um momento
                 await new Promise(resolve => setTimeout(resolve, 300));
                 
-                // Encontrar e usar câmera traseira
                 const rearCameraId = await findRearCamera();
                 
                 if (rearCameraId) {
                     currentCameraId = rearCameraId;
                     
+                    const cameraConfig = {
+                        ...config,
+                        videoConstraints: {
+                            deviceId: { exact: rearCameraId },
+                            width: { min: 1280, ideal: 1920, max: 2560 },
+                            height: { min: 720, ideal: 1080, max: 1440 },
+                            frameRate: { ideal: 30, min: 24 },
+                            advanced: [
+                                { focusMode: "continuous" },
+                                { whiteBalanceMode: "continuous" }
+                            ]
+                        }
+                    };
+                    
                     await html5QrCode.start(
                         rearCameraId,
-                        config,
+                        cameraConfig,
                         onScanSuccess,
                         onScanError
                     );
                     
                 } else {
-                    // Fallback: usar facingMode environment
+                    const fallbackConfig = {
+                        ...config,
+                        videoConstraints: {
+                            facingMode: { exact: "environment" },
+                            width: { min: 1280, ideal: 1920 },
+                            height: { min: 720, ideal: 1080 },
+                            frameRate: { ideal: 30 },
+                            advanced: [{ focusMode: "continuous" }]
+                        }
+                    };
+                    
                     await html5QrCode.start(
                         { facingMode: "environment" },
-                        config,
+                        fallbackConfig,
                         onScanSuccess,
                         onScanError
                     );
@@ -396,8 +398,8 @@
                     currentCameraId = "environment";
                 }
                 
-                // Atualizar status
-                status.textContent = '✅ Scanner ativo! Aponte para um código de barras...';
+                status.textContent = '✅ Scanner ativo com auto-foco! Aponte para um código de barras...';
+                status.className = 'status success';
                 isScanning = true;
                 
             } catch (error) {
@@ -406,13 +408,17 @@
             }
         }
 
-        // Encontrar câmera traseira
         async function findRearCamera() {
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
                 
-                // Procurar por câmera traseira
+                const exactCamera = videoDevices.find(device => 
+                    device.label && device.label.includes("camera 0, facing back")
+                );
+                
+                if (exactCamera) return exactCamera.deviceId;
+                
                 const rearCamera = videoDevices.find(device => {
                     if (!device.label) return false;
                     const label = device.label.toLowerCase();
@@ -421,7 +427,11 @@
                     );
                 });
                 
-                return rearCamera ? rearCamera.deviceId : null;
+                if (rearCamera) return rearCamera.deviceId;
+                
+                if (videoDevices.length > 0) return videoDevices[0].deviceId;
+                
+                return null;
                 
             } catch (error) {
                 console.error("Erro ao encontrar câmera:", error);
@@ -429,11 +439,9 @@
             }
         }
 
-        // Tratamento de erros do scanner
         async function handleScannerError(error) {
             const status = document.getElementById('status');
             
-            // Limpar scanner se existir
             if (html5QrCode) {
                 try {
                     await html5QrCode.stop();
@@ -441,55 +449,81 @@
                 } catch (e) {}
             }
             
-            // Resetar estado
             isScanning = false;
             html5QrCode = null;
             currentCameraId = null;
             
-            // Mostrar mensagem de erro
             status.className = 'status error';
             
             if (error.message.includes('permission')) {
-                status.textContent = '❌ Permissão da câmera negada. Por favor, permita o acesso à câmera.';
+                status.textContent = '❌ Permissão da câmera negada. Permita o acesso à câmera.';
             } else if (error.message.includes('NotFoundError')) {
                 status.textContent = '❌ Câmera traseira não disponível.';
+            } else if (error.message.includes('NotSupportedError')) {
+                status.textContent = '🔄 Tentando modo padrão...';
+                setTimeout(() => initScannerWithoutAdvanced(), 1000);
+                return;
             } else {
                 status.textContent = '❌ Erro ao iniciar o scanner. Tente novamente.';
             }
             
-            // Restaurar interface
             document.getElementById('startBtn').classList.remove('hidden');
             document.getElementById('cameraControls').classList.add('hidden');
             document.getElementById('cameraInfo').classList.add('hidden');
             document.getElementById('scannerContainer').style.display = 'none';
         }
 
-        // Sucesso na leitura
+        async function initScannerWithoutAdvanced() {
+            try {
+                const status = document.getElementById('status');
+                status.innerHTML = '<div class="loading"></div> Iniciando modo padrão...';
+                
+                const basicConfig = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 150 },
+                    formatsToSupport: [
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8,
+                        Html5QrcodeSupportedFormats.CODE_128
+                    ]
+                };
+                
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    basicConfig,
+                    onScanSuccess,
+                    onScanError
+                );
+                
+                status.textContent = '✅ Scanner ativo (modo padrão)!';
+                isScanning = true;
+                currentCameraId = "environment";
+                
+            } catch (error) {
+                document.getElementById('status').textContent = '❌ Falha ao iniciar scanner.';
+                document.getElementById('startBtn').classList.remove('hidden');
+            }
+        }
+
         function onScanSuccess(decodedText, decodedResult) {
             const now = Date.now();
             const code = decodedText.trim();
             
-            // Validar código
             if (!isValidBarcode(code)) return;
             
-            // Prevenir leituras duplicadas rápidas
             if (code === lastScanned && (now - lastScanTime) < 2000) return;
             
             lastScanned = code;
             lastScanTime = now;
             
-            // Feedback visual
             const status = document.getElementById('status');
             status.textContent = `✅ Código detectado: ${code}`;
             status.className = 'status success';
             
-            // Pausar scanner temporariamente
             if (html5QrCode) html5QrCode.pause();
             
-            // Buscar produto
             searchProduct(code);
             
-            // Reiniciar scanner após 3 segundos
             setTimeout(() => {
                 if (html5QrCode && isScanning) {
                     html5QrCode.resume();
@@ -499,29 +533,21 @@
             }, 3000);
         }
 
-        // Erro na leitura
         function onScanError(error) {
-            // Ignorar erros de "nenhum código encontrado"
             if (!error.includes("No MultiFormat Readers")) {
                 console.log('Erro de scan:', error);
             }
         }
 
-        // Validar código de barras
         function isValidBarcode(code) {
-            // Deve ter entre 8 e 13 dígitos e ser apenas números
             if (!/^\d+$/.test(code)) return false;
             if (code.length < 8 || code.length > 13) return false;
             
-            // Validação de dígito verificador para EAN-13
-            if (code.length === 13) {
-                return validateEAN13(code);
-            }
+            if (code.length === 13) return validateEAN13(code);
             
             return true;
         }
 
-        // Validar EAN-13
         function validateEAN13(code) {
             let sum = 0;
             for (let i = 0; i < 12; i++) {
@@ -532,7 +558,6 @@
             return checksum === parseInt(code[12]);
         }
 
-        // Parar scanner
         async function stopScanner() {
             if (html5QrCode && isScanning) {
                 try {
@@ -541,23 +566,19 @@
                 html5QrCode.clear();
             }
             
-            // Resetar estado
             isScanning = false;
             html5QrCode = null;
             currentCameraId = null;
             
-            // Restaurar interface inicial
             document.getElementById('scannerContainer').style.display = 'none';
             document.getElementById('startBtn').classList.remove('hidden');
             document.getElementById('cameraControls').classList.add('hidden');
             document.getElementById('cameraInfo').classList.add('hidden');
             
-            // Atualizar status
             document.getElementById('status').className = 'status';
             document.getElementById('status').textContent = 'Scanner parado. Clique para iniciar novamente.';
         }
 
-        // Buscar produto manualmente
         function searchManual() {
             const code = document.getElementById('manualCode').value.trim();
             if (!code || code.length < 8) {
@@ -567,7 +588,6 @@
             searchProduct(code);
         }
 
-        // Buscar produto na API
         async function searchProduct(code) {
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = `
@@ -604,7 +624,6 @@
             }
         }
 
-        // Mostrar informações do produto
         function showProductInfo(product, code) {
             const resultDiv = document.getElementById('result');
             
@@ -647,7 +666,6 @@
             `;
         }
 
-        // Mostrar produto não encontrado
         function showProductNotFound(code) {
             const resultDiv = document.getElementById('result');
             
@@ -659,11 +677,8 @@
             `;
         }
 
-        // Permitir Enter no campo manual
         document.getElementById('manualCode').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchManual();
-            }
+            if (e.key === 'Enter') searchManual();
         });
     </script>
 </body>
