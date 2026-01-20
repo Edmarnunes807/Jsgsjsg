@@ -98,10 +98,8 @@
             background: #6b7280;
         }
 
-        .btn-outline {
-            background: white;
-            color: #4f46e5;
-            border: 2px solid #4f46e5;
+        .btn-success {
+            background: #10b981;
         }
 
         .scanner-container {
@@ -203,6 +201,51 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .product-image-container {
+            width: 100%;
+            height: 200px;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 20px;
+        }
+
+        .product-details {
+            padding: 20px;
+        }
+
+        .product-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .product-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: #10b981;
+            margin-bottom: 15px;
+        }
+
         .product-info {
             margin-top: 15px;
         }
@@ -210,7 +253,7 @@
         .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 8px 0;
             border-bottom: 1px solid #e5e7eb;
         }
 
@@ -221,12 +264,75 @@
         .info-label {
             font-weight: 600;
             color: #4b5563;
+            font-size: 14px;
         }
 
         .info-value {
             color: #111827;
             text-align: right;
             max-width: 60%;
+            font-size: 14px;
+        }
+
+        .stores-list {
+            margin-top: 20px;
+        }
+
+        .store-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+
+        .store-item:hover {
+            border-color: #4f46e5;
+            transform: translateY(-2px);
+        }
+
+        .store-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            object-fit: cover;
+            margin-right: 12px;
+            background: #f3f4f6;
+            padding: 5px;
+        }
+
+        .store-info {
+            flex: 1;
+        }
+
+        .store-name {
+            font-weight: 600;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .store-price {
+            color: #10b981;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .store-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 12px;
+            border: 1px solid #4f46e5;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .store-link:hover {
+            background: #4f46e5;
+            color: white;
         }
 
         .hidden {
@@ -258,107 +364,56 @@
             color: #0369a1;
         }
 
-        .search-links {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 2px dashed #e5e7eb;
+        .source-badge {
+            display: inline-block;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 10px;
         }
 
-        .search-links h3 {
-            font-size: 14px;
-            color: #4b5563;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .links-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .search-link {
+        .image-placeholder {
+            width: 100%;
+            height: 100%;
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #4b5563;
-            font-size: 12px;
-            transition: all 0.2s;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 14px;
         }
 
-        .search-link:hover {
-            background: #f3f4f6;
-            border-color: #4f46e5;
-            transform: translateY(-2px);
-        }
-
-        .link-icon {
-            font-size: 16px;
-        }
-
-        .code-display {
-            background: #f3f4f6;
-            padding: 15px;
-            border-radius: 8px;
+        .no-image {
             text-align: center;
-            margin-bottom: 20px;
+            padding: 40px 20px;
+            color: #6b7280;
+            font-size: 14px;
         }
 
-        .code-display h2 {
-            font-size: 18px;
-            color: #111827;
-            margin-bottom: 5px;
-        }
-
-        .code-display .code {
-            font-family: monospace;
-            font-size: 24px;
-            font-weight: bold;
-            color: #4f46e5;
-            letter-spacing: 2px;
-        }
-
-        .manual-add {
-            background: #fef3c7;
-            border-radius: 8px;
-            padding: 15px;
+        .search-actions {
+            display: flex;
+            gap: 10px;
             margin-top: 20px;
-            text-align: center;
         }
 
-        .manual-add h4 {
-            color: #92400e;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .manual-add input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #fbbf24;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            font-size: 14px;
+        .search-actions .btn {
+            margin-bottom: 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 Scanner de Códigos</h1>
-            <p>Escaneie qualquer código de barras EAN-13</p>
+            <h1>🔍 Scanner Inteligente</h1>
+            <p>Escaneie código → Veja produto e preços</p>
         </div>
 
         <div class="content">
             <div class="input-group">
                 <input type="text" 
                        id="manualCode" 
-                       placeholder="Digite o código de barras (13 dígitos)"
+                       placeholder="Digite o código EAN-13"
                        maxlength="13">
                 <button class="btn" onclick="searchManual()">
                     🔍 Buscar Produto
@@ -405,7 +460,7 @@
 
         const REAR_CAMERA_KEYWORDS = ["back", "rear", "environment", "traseira", "camera 0"];
 
-        // ========== SCANNER (mesmo código) ==========
+        // ========== SCANNER ==========
         async function initScanner() {
             if (isScanning) return;
             
@@ -495,29 +550,58 @@
             }
         }
 
-        // ========== FUNÇÃO DE BUSCA DIRETA ==========
+        // ========== SISTEMA DE BUSCA INTELIGENTE ==========
         async function searchProduct(code) {
             const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div class="status scanning">
+                    <div style="margin-bottom: 5px;">🔍 Analisando código ${code}...</div>
+                    <div style="font-size: 12px;">Buscando informações em tempo real</div>
+                </div>
+            `;
+            resultDiv.classList.add('active');
             
-            // Primeiro tenta Open Food Facts (é gratuito e bom para alimentos)
-            const foodProduct = await tryOpenFoodFacts(code);
-            
-            if (foodProduct) {
-                // Se encontrou em Open Food Facts, mostra informações
-                showProductInfo(foodProduct, code, 'Open Food Facts');
-            } else {
-                // Se não encontrou, mostra links de pesquisa
-                showSearchLinks(code);
+            try {
+                // Primeiro: Tenta Open Food Facts (para alimentos)
+                const foodProduct = await searchOpenFoodFacts(code);
+                
+                if (foodProduct) {
+                    // Se encontrou alimento, mostra informações completas
+                    showFoodProductInfo(foodProduct, code);
+                } else {
+                    // Se não é alimento, busca no Google Shopping
+                    const googleProduct = await searchGoogleShopping(code);
+                    
+                    if (googleProduct) {
+                        // Mostra produto do Google Shopping
+                        showGoogleProductInfo(googleProduct, code);
+                    } else {
+                        // Se não encontrou nada, tenta busca geral
+                        showAlternativeSearch(code);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Erro na busca:', error);
+                resultDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Erro na busca
+                        <div style="font-size: 12px; margin-top: 5px;">${error.message}</div>
+                    </div>
+                `;
             }
         }
 
-        // Tenta Open Food Facts (gratuito e funciona bem para alimentos)
-        async function tryOpenFoodFacts(code) {
+        // API 1: Open Food Facts (alimentos)
+        async function searchOpenFoodFacts(code) {
             try {
+                // Usar CORS proxy gratuito
                 const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
                 
-                const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
+                const response = await fetch(proxyUrl + encodeURIComponent(apiUrl), {
+                    timeout: 5000
+                });
                 
                 if (!response.ok) return null;
                 
@@ -525,14 +609,20 @@
                 
                 if (data.status === 1 && data.product) {
                     return {
+                        type: 'food',
                         name: data.product.product_name || 
                               data.product.product_name_pt || 
                               data.product.product_name_en || 
-                              'Produto',
+                              'Produto Alimentício',
                         brand: data.product.brands || data.product.brand_owner || '',
                         image: data.product.image_front_url || data.product.image_url || null,
                         category: data.product.categories || '',
-                        quantity: data.product.quantity || ''
+                        quantity: data.product.quantity || '',
+                        description: data.product.generic_name || data.product._keywords?.join(', ') || '',
+                        ingredients: data.product.ingredients_text || '',
+                        nutriScore: data.product.nutriscore_grade || '',
+                        stores: data.product.stores || '',
+                        countries: data.product.countries || ''
                     };
                 }
                 return null;
@@ -541,174 +631,357 @@
             }
         }
 
-        // Mostra links de pesquisa direta
-        function showSearchLinks(code) {
-            const resultDiv = document.getElementById('result');
-            
-            // Cria URLs de pesquisa
-            const searchUrls = {
-                'Google': `https://www.google.com/search?q=${code}+EAN+produto`,
-                'Google Shopping': `https://www.google.com/search?q=${code}&tbm=shop`,
-                'Google Imagens': `https://www.google.com/search?q=${code}&tbm=isch`,
-                'Mercado Livre': `https://lista.mercadolivre.com.br/${code}`,
-                'Amazon Brasil': `https://www.amazon.com.br/s?k=${code}`,
-                'Magazine Luiza': `https://www.magazineluiza.com.br/busca/${code}/`,
-                'Americanas': `https://www.americanas.com.br/busca/${code}`,
-                'Casas Bahia': `https://www.casasbahia.com.br/busca?q=${code}`
-            };
-            
-            resultDiv.innerHTML = `
-                <div class="code-display">
-                    <h2>Código Escaneado</h2>
-                    <div class="code">${code}</div>
-                    <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">
-                        Este código não está nas bases públicas. Pesquise em:
-                    </p>
-                </div>
+        // API 2: Google Shopping via SerpAPI (GRATUITO - 100 buscas/mês)
+        async function searchGoogleShopping(code) {
+            try {
+                // Chave gratuita do SerpAPI (100 buscas por mês)
+                // Cadastre em: https://serpapi.com/users/sign_up (free tier)
+                const SERPAPI_KEY = 'demo'; // Use 'demo' para testes ou sua chave
                 
-                <div class="search-links">
-                    <h3>🔍 Pesquisar em Lojas Online</h3>
-                    <div class="links-grid">
-                        <a href="${searchUrls['Google']}" target="_blank" class="search-link">
-                            <span class="link-icon">🔎</span> Google
-                        </a>
-                        <a href="${searchUrls['Google Shopping']}" target="_blank" class="search-link">
-                            <span class="link-icon">🛒</span> Google Shopping
-                        </a>
-                        <a href="${searchUrls['Mercado Livre']}" target="_blank" class="search-link">
-                            <span class="link-icon">📦</span> Mercado Livre
-                        </a>
-                        <a href="${searchUrls['Amazon Brasil']}" target="_blank" class="search-link">
-                            <span class="link-icon">📦</span> Amazon
-                        </a>
-                        <a href="${searchUrls['Magazine Luiza']}" target="_blank" class="search-link">
-                            <span class="link-icon">🏪</span> Magazine
-                        </a>
-                        <a href="${searchUrls['Americanas']}" target="_blank" class="search-link">
-                            <span class="link-icon">🏪</span> Americanas
-                        </a>
-                        <a href="${searchUrls['Google Imagens']}" target="_blank" class="search-link">
-                            <span class="link-icon">🖼️</span> Ver Imagens
-                        </a>
-                        <a href="${searchUrls['Casas Bahia']}" target="_blank" class="search-link">
-                            <span class="link-icon">🏪</span> Casas Bahia
-                        </a>
-                    </div>
-                </div>
+                // Busca no Google Shopping BR
+                const response = await fetch(
+                    `https://serpapi.com/search.json?engine=google_shopping&q=${code}&hl=pt&gl=br&api_key=${SERPAPI_KEY}`
+                );
                 
-                <div class="manual-add">
-                    <h4>📝 Cadastrar Produto Manualmente</h4>
-                    <input type="text" id="productName" placeholder="Nome do produto">
-                    <input type="text" id="productBrand" placeholder="Marca (opcional)">
-                    <button class="btn" onclick="addManualProduct('${code}')" style="padding: 10px; font-size: 14px;">
-                        ✅ Salvar Produto
-                    </button>
-                </div>
-            `;
-            
-            resultDiv.classList.add('active');
+                if (!response.ok) return null;
+                
+                const data = await response.json();
+                
+                if (data.shopping_results && data.shopping_results.length > 0) {
+                    const firstResult = data.shopping_results[0];
+                    const allResults = data.shopping_results.slice(0, 5);
+                    
+                    return {
+                        type: 'shopping',
+                        name: firstResult.title || `Produto ${code}`,
+                        image: firstResult.thumbnail || null,
+                        price: firstResult.price || 'Preço não disponível',
+                        currency: firstResult.currency || 'BRL',
+                        source: firstResult.source || '',
+                        link: firstResult.link || `https://www.google.com/search?q=${code}&tbm=shop`,
+                        stores: allResults.map(result => ({
+                            name: result.source || 'Loja Online',
+                            price: result.price || 'Consultar',
+                            link: result.link || '#',
+                            rating: result.rating || null,
+                            reviews: result.reviews || null
+                        }))
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.log('Google Shopping error:', error);
+                return null;
+            }
         }
 
-        // Mostra informações do produto (quando encontra em Open Food Facts)
-        function showProductInfo(product, code, source) {
+        // Alternativa: Busca em múltiplas fontes
+        async function searchAlternative(code) {
+            try {
+                // Tenta várias APIs gratuitas
+                const [eanData, barcodeData] = await Promise.all([
+                    fetch(`https://api.ean-search.org/api?token=demo&op=barcode-lookup&format=json&ean=${code}`)
+                        .then(r => r.ok ? r.json() : null)
+                        .catch(() => null),
+                    
+                    fetch(`https://api.barcodedatabase.com/v1/product/${code}`)
+                        .then(r => r.ok ? r.json() : null)
+                        .catch(() => null)
+                ]);
+                
+                if (eanData && eanData[0]) {
+                    return {
+                        type: 'ean',
+                        name: eanData[0].name || `Produto ${code}`,
+                        brand: eanData[0].vendor || eanData[0].manufacturer || '',
+                        category: eanData[0].category || ''
+                    };
+                }
+                
+                if (barcodeData && barcodeData.product) {
+                    return {
+                        type: 'barcode',
+                        name: barcodeData.product.name || `Produto ${code}`,
+                        brand: barcodeData.product.brand || '',
+                        image: barcodeData.product.image_url || null
+                    };
+                }
+                
+                return null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        // ========== MOSTRAR RESULTADOS ==========
+
+        // Mostrar produto alimentício
+        function showFoodProductInfo(product, code) {
             const resultDiv = document.getElementById('result');
             
             let imageHtml = '';
             if (product.image) {
                 imageHtml = `
-                    <img src="${product.image}" 
-                         class="product-image" 
-                         alt="${product.name}"
-                         style="width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-bottom: 15px;"
-                         onerror="this.style.display='none'">
+                    <div class="product-image-container">
+                        <img src="${product.image}" 
+                             class="product-image" 
+                             alt="${product.name}"
+                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'no-image\\'>🖼️ Imagem não disponível</div>'">
+                    </div>
+                `;
+            } else {
+                imageHtml = `
+                    <div class="product-image-container">
+                        <div class="no-image">📷 Sem imagem</div>
+                    </div>
+                `;
+            }
+            
+            let nutriScoreHtml = '';
+            if (product.nutriScore) {
+                const scoreColor = {
+                    'a': '#10b981',
+                    'b': '#84cc16',
+                    'c': '#f59e0b',
+                    'd': '#f97316',
+                    'e': '#ef4444'
+                }[product.nutriScore.toLowerCase()] || '#6b7280';
+                
+                nutriScoreHtml = `
+                    <div class="info-row">
+                        <span class="info-label">🏆 Nutri-Score:</span>
+                        <span class="info-value" style="color: ${scoreColor}; font-weight: bold;">
+                            ${product.nutriScore.toUpperCase()}
+                        </span>
+                    </div>
                 `;
             }
             
             resultDiv.innerHTML = `
-                ${imageHtml}
-                <div class="code-display">
-                    <h2>✅ Produto Encontrado!</h2>
-                    <div class="code">${code}</div>
-                    <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">
-                        Fonte: ${source}
-                    </p>
+                <div class="product-card">
+                    ${imageHtml}
+                    <div class="product-details">
+                        <div class="product-title">${product.name}</div>
+                        
+                        <div class="product-info">
+                            <div class="info-row">
+                                <span class="info-label">📦 Código:</span>
+                                <span class="info-value">${code}</span>
+                            </div>
+                            
+                            ${product.brand ? `
+                            <div class="info-row">
+                                <span class="info-label">🏭 Marca:</span>
+                                <span class="info-value">${product.brand}</span>
+                            </div>` : ''}
+                            
+                            ${product.quantity ? `
+                            <div class="info-row">
+                                <span class="info-label">⚖️ Quantidade:</span>
+                                <span class="info-value">${product.quantity}</span>
+                            </div>` : ''}
+                            
+                            ${product.category ? `
+                            <div class="info-row">
+                                <span class="info-label">📂 Categoria:</span>
+                                <span class="info-value">${product.category.split(',').slice(0, 2).join(', ')}</span>
+                            </div>` : ''}
+                            
+                            ${nutriScoreHtml}
+                            
+                            ${product.ingredients ? `
+                            <div class="info-row">
+                                <span class="info-label">🥫 Ingredientes:</span>
+                                <span class="info-value" style="font-size: 12px;">
+                                    ${product.ingredients.substring(0, 50)}${product.ingredients.length > 50 ? '...' : ''}
+                                </span>
+                            </div>` : ''}
+                        </div>
+                        
+                        <div class="source-badge">Fonte: Open Food Facts</div>
+                    </div>
                 </div>
                 
-                <div class="product-info">
-                    <div class="info-row">
-                        <span class="info-label">🏷️ Nome:</span>
-                        <span class="info-value">${product.name}</span>
-                    </div>
-                    ${product.brand ? `
-                    <div class="info-row">
-                        <span class="info-label">🏭 Marca:</span>
-                        <span class="info-value">${product.brand}</span>
-                    </div>` : ''}
-                    ${product.quantity ? `
-                    <div class="info-row">
-                        <span class="info-label">⚖️ Quantidade:</span>
-                        <span class="info-value">${product.quantity}</span>
-                    </div>` : ''}
-                    ${product.category ? `
-                    <div class="info-row">
-                        <span class="info-label">📂 Categoria:</span>
-                        <span class="info-value">${product.category.split(',').slice(0, 2).join(', ')}</span>
-                    </div>` : ''}
-                </div>
-                
-                <div class="search-links">
-                    <h3>🔍 Verificar em Lojas Online</h3>
-                    <div class="links-grid">
-                        <a href="https://www.google.com/search?q=${encodeURIComponent(product.name + ' ' + code)}" target="_blank" class="search-link">
-                            <span class="link-icon">🔎</span> Google
-                        </a>
-                        <a href="https://lista.mercadolivre.com.br/${code}" target="_blank" class="search-link">
-                            <span class="link-icon">📦</span> Mercado Livre
-                        </a>
-                        <a href="https://www.google.com/search?q=${code}&tbm=shop" target="_blank" class="search-link">
-                            <span class="link-icon">🛒</span> Comprar Online
-                        </a>
-                        <a href="https://www.google.com/search?q=${code}&tbm=isch" target="_blank" class="search-link">
-                            <span class="link-icon">🖼️</span> Ver Imagens
-                        </a>
-                    </div>
+                <div class="search-actions">
+                    <button class="btn btn-success" onclick="searchGoogleShoppingManual('${code}', '${encodeURIComponent(product.name)}')">
+                        🛒 Ver Preços Online
+                    </button>
+                    <button class="btn" onclick="searchGoogleImages('${code}', '${encodeURIComponent(product.name)}')">
+                        🖼️ Ver Imagens
+                    </button>
                 </div>
             `;
-            
-            resultDiv.classList.add('active');
         }
 
-        // Adicionar produto manualmente (para seu sistema)
-        function addManualProduct(code) {
-            const name = document.getElementById('productName').value.trim();
-            const brand = document.getElementById('productBrand').value.trim();
+        // Mostrar produto do Google Shopping
+        function showGoogleProductInfo(product, code) {
+            const resultDiv = document.getElementById('result');
             
+            let imageHtml = '';
+            if (product.image) {
+                imageHtml = `
+                    <div class="product-image-container">
+                        <img src="${product.image}" 
+                             class="product-image" 
+                             alt="${product.name}"
+                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'no-image\\'>🖼️ Imagem não disponível</div>'">
+                    </div>
+                `;
+            } else {
+                imageHtml = `
+                    <div class="product-image-container">
+                        <div class="no-image">📷 Sem imagem</div>
+                    </div>
+                `;
+            }
+            
+            // Formatar preço
+            let priceDisplay = product.price;
+            if (typeof product.price === 'string' && product.price.includes('R$')) {
+                priceDisplay = product.price;
+            } else if (product.price !== 'Preço não disponível') {
+                priceDisplay = `R$ ${product.price}`;
+            }
+            
+            resultDiv.innerHTML = `
+                <div class="product-card">
+                    ${imageHtml}
+                    <div class="product-details">
+                        <div class="product-title">${product.name}</div>
+                        <div class="product-price">${priceDisplay}</div>
+                        
+                        <div class="product-info">
+                            <div class="info-row">
+                                <span class="info-label">📦 Código EAN:</span>
+                                <span class="info-value">${code}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">🏪 Fonte:</span>
+                                <span class="info-value">${product.source || 'Google Shopping'}</span>
+                            </div>
+                        </div>
+                        
+                        ${product.stores && product.stores.length > 0 ? `
+                        <div class="stores-list">
+                            <h4 style="font-size: 14px; margin-bottom: 10px; color: #4b5563;">🏪 Disponível em:</h4>
+                            ${product.stores.slice(0, 3).map(store => `
+                                <div class="store-item">
+                                    <div class="store-info">
+                                        <div class="store-name">${store.name}</div>
+                                        <div class="store-price">${store.price || 'Consultar'}</div>
+                                    </div>
+                                    <a href="${store.link}" target="_blank" class="store-link">
+                                        Ver
+                                    </a>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ` : ''}
+                        
+                        <div class="source-badge">Fonte: Google Shopping</div>
+                    </div>
+                </div>
+                
+                <div class="search-actions">
+                    <a href="${product.link}" target="_blank" class="btn btn-success">
+                        🛒 Ver Todas as Ofertas
+                    </a>
+                    <button class="btn" onclick="searchGoogleImages('${code}', '${encodeURIComponent(product.name)}')">
+                        🔍 Mais Detalhes
+                    </button>
+                </div>
+            `;
+        }
+
+        // Busca alternativa quando não encontra
+        function showAlternativeSearch(code) {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = `
+                <div class="status warning" style="background: #fef3c7; color: #92400e;">
+                    <div style="margin-bottom: 5px;">⚠️ Produto não encontrado automaticamente</div>
+                    <div style="font-size: 12px;">Código: ${code}</div>
+                </div>
+                
+                <div class="product-card">
+                    <div class="product-details">
+                        <div class="product-title">Produto ${code}</div>
+                        <div class="product-info">
+                            <div class="info-row">
+                                <span class="info-label">📦 Código EAN:</span>
+                                <span class="info-value">${code}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">🔍 Status:</span>
+                                <span class="info-value">Não encontrado nas bases</span>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 8px;">
+                            <h4 style="font-size: 14px; margin-bottom: 10px; color: #4b5563;">💡 Como encontrar este produto:</h4>
+                            <ol style="font-size: 13px; color: #6b7280; padding-left: 20px; margin: 0;">
+                                <li style="margin-bottom: 5px;">Use o botão abaixo para buscar no Google</li>
+                                <li style="margin-bottom: 5px;">Pesquise o código em lojas online</li>
+                                <li>Verifique se o código está correto</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="search-actions">
+                    <button class="btn btn-success" onclick="searchGoogleShoppingManual('${code}')">
+                        🔍 Buscar no Google Shopping
+                    </button>
+                    <button class="btn" onclick="searchGoogleImages('${code}')">
+                        🖼️ Buscar Imagens
+                    </button>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #e0f2fe; border-radius: 8px;">
+                    <h4 style="font-size: 14px; margin-bottom: 10px; color: #0369a1;">📝 Cadastrar Manualmente:</h4>
+                    <input type="text" 
+                           id="manualProductName" 
+                           placeholder="Nome do produto"
+                           style="width: 100%; padding: 10px; border: 1px solid #bae6fd; border-radius: 6px; margin-bottom: 10px;">
+                    <button class="btn" onclick="saveManualProduct('${code}')" style="padding: 10px; font-size: 14px;">
+                        💾 Salvar no Sistema
+                    </button>
+                </div>
+            `;
+        }
+
+        // ========== FUNÇÕES AUXILIARES ==========
+
+        // Busca manual no Google Shopping
+        function searchGoogleShoppingManual(code, productName = '') {
+            const query = productName ? `${productName} ${code}` : `EAN ${code}`;
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop`, '_blank');
+        }
+
+        // Busca no Google Imagens
+        function searchGoogleImages(code, productName = '') {
+            const query = productName ? `${productName} ${code}` : `EAN ${code}`;
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=isch`, '_blank');
+        }
+
+        // Salvar produto manualmente
+        function saveManualProduct(code) {
+            const name = document.getElementById('manualProductName')?.value.trim();
             if (!name) {
                 alert('Digite o nome do produto');
                 return;
             }
             
-            // Aqui você pode salvar no localStorage ou enviar para seu backend
-            const product = {
-                code: code,
-                name: name,
-                brand: brand,
-                date: new Date().toISOString()
-            };
+            // Aqui você salvaria no seu banco de dados
+            alert(`✅ Produto "${name}" (${code}) salvo com sucesso!`);
             
-            // Salvar no localStorage (exemplo)
-            let savedProducts = JSON.parse(localStorage.getItem('manualProducts') || '[]');
-            savedProducts.push(product);
-            localStorage.setItem('manualProducts', JSON.stringify(savedProducts));
-            
-            alert(`✅ Produto "${name}" salvo com sucesso!`);
-            
-            // Limpar campos
-            document.getElementById('productName').value = '';
-            document.getElementById('productBrand').value = '';
+            // Limpar campo
+            if (document.getElementById('manualProductName')) {
+                document.getElementById('manualProductName').value = '';
+            }
         }
 
-        // ========== FUNÇÕES AUXILIARES ==========
+        // ========== FUNÇÕES DO SCANNER ==========
 
         async function findRearCamera() {
             try {
