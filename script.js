@@ -9,6 +9,7 @@ let isScanning = false;
 let lastScanned = '';
 let lastScanTime = 0;
 let currentProduct = null;
+let currentModalType = 'edit'; // 'edit' ou 'new'
 
 const REAR_CAMERA_KEYWORDS = ["back", "rear", "environment", "traseira", "camera 0"];
 
@@ -18,17 +19,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Enter') searchManual();
     });
     
+    // Configurar botão de salvar no modal
+    document.getElementById('saveEditBtn').addEventListener('click', saveEditedProduct);
+    
+    // Verificar status da API
+    checkAPIStatus();
+    
     // Remover sistema de tabs se existir
     const tabContainers = document.querySelectorAll('.tab-container, .tab');
     if (tabContainers.length > 0) {
         tabContainers.forEach(el => el.style.display = 'none');
     }
-    
-    // Verificar status da API
-    checkAPIStatus();
 });
 
-// ========== FUNÇÕES DO SCANNER (FALTANTES NO PRIMEIRO CÓDIGO) ==========
+// ========== FUNÇÕES DO SCANNER ==========
 async function initScanner() {
     if (isScanning) return;
     
@@ -38,11 +42,9 @@ async function initScanner() {
         // Mostrar interface do scanner
         const scannerContainer = document.getElementById('scannerContainer');
         const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
         
         if (scannerContainer) scannerContainer.style.display = 'block';
         if (startBtn) startBtn.style.display = 'none';
-        if (stopBtn) stopBtn.style.display = 'inline-block';
         
         const config = {
             fps: 30,
@@ -99,7 +101,7 @@ async function initScanner() {
                 }
             };
             
-            await html5Qrcode.start(
+            await html5QrCode.start(
                 { facingMode: "environment" },
                 fallbackConfig,
                 onScanSuccess,
@@ -120,7 +122,6 @@ async function initScanner() {
 
 async function findRearCamera() {
     try {
-        // Verificar se temos permissão e acesso a dispositivos
         if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
             return null;
         }
@@ -128,14 +129,12 @@ async function findRearCamera() {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         
-        // Primeiro, tentar encontrar por label específica
         const exactCamera = videoDevices.find(device => 
             device.label && device.label.includes("camera 0, facing back")
         );
         
         if (exactCamera) return exactCamera.deviceId;
         
-        // Procurar por palavras-chave na label
         const rearCamera = videoDevices.find(device => {
             if (!device.label) return false;
             const label = device.label.toLowerCase();
@@ -146,12 +145,10 @@ async function findRearCamera() {
         
         if (rearCamera) return rearCamera.deviceId;
         
-        // Se tiver múltiplas câmeras, assumir que a última é a traseira (comum em celulares)
         if (videoDevices.length > 1) {
             return videoDevices[videoDevices.length - 1].deviceId;
         }
         
-        // Se só tem uma câmera, usar ela
         if (videoDevices.length === 1) {
             return videoDevices[0].deviceId;
         }
@@ -178,84 +175,22 @@ async function handleScannerError(error) {
     html5QrCode = null;
     currentCameraId = null;
     
-    // Restaurar botão de iniciar
     const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
     const scannerContainer = document.getElementById('scannerContainer');
     
     if (startBtn) startBtn.style.display = 'inline-block';
-    if (stopBtn) stopBtn.style.display = 'none';
     if (scannerContainer) scannerContainer.style.display = 'none';
     
-    // Mensagens de erro específicas
     if (error.message && error.message.includes('permission')) {
-        updateStatus('Permissão da câmera negada. Permita o acesso à câmera nas configurações do navegador.', 'error');
+        updateStatus('Permissão da câmera negada.', 'error');
     } else if (error.message && error.message.includes('NotFoundError')) {
-        updateStatus('Nenhuma câmera encontrada no dispositivo.', 'error');
-    } else if (error.message && error.message.includes('NotSupportedError')) {
-        updateStatus('Dispositivo não suporta scanner de câmera.', 'error');
-    } else if (error.message && error.message.includes('NotAllowedError')) {
-        updateStatus('Acesso à câmera não permitido.', 'error');
-    } else if (error.message && error.message.includes('OverconstrainedError')) {
-        // Tentar modo mais simples
-        updateStatus('Tentando modo simplificado...', 'warning');
-        setTimeout(() => initScannerSimple(), 1000);
-        return;
+        updateStatus('Nenhuma câmera encontrada.', 'error');
     } else {
-        updateStatus('Erro ao iniciar o scanner: ' + (error.message || 'Erro desconhecido'), 'error');
-    }
-}
-
-async function initScannerSimple() {
-    try {
-        updateStatus('Iniciando modo simplificado...', 'scanning');
-        
-        const simpleConfig = {
-            fps: 10,
-            qrbox: { width: 250, height: 150 },
-            formatsToSupport: [
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.CODE_128
-            ]
-        };
-        
-        html5QrCode = new Html5Qrcode("reader");
-        
-        await html5QrCode.start(
-            { facingMode: "environment" },
-            simpleConfig,
-            onScanSuccess,
-            onScanError
-        );
-        
-        updateStatus('Scanner ativo (modo simplificado)!', 'success');
-        isScanning = true;
-        currentCameraId = "environment";
-        
-        // Atualizar interface
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const scannerContainer = document.getElementById('scannerContainer');
-        
-        if (scannerContainer) scannerContainer.style.display = 'block';
-        if (startBtn) startBtn.style.display = 'none';
-        if (stopBtn) stopBtn.style.display = 'inline-block';
-        
-    } catch (error) {
-        console.error('Erro no modo simplificado:', error);
-        updateStatus('Falha ao iniciar scanner em qualquer modo.', 'error');
-        
-        // Restaurar botão
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        if (startBtn) startBtn.style.display = 'inline-block';
-        if (stopBtn) stopBtn.style.display = 'none';
+        updateStatus('Erro ao iniciar scanner.', 'error');
     }
 }
 
 function onScanError(error) {
-    // Ignorar erros de "No MultiFormat Readers" que são normais
     if (!error || typeof error !== 'string' || !error.includes("No MultiFormat Readers")) {
         console.log('Erro de scan:', error);
     }
@@ -275,16 +210,45 @@ async function stopScanner() {
     html5QrCode = null;
     currentCameraId = null;
     
-    // Atualizar interface
     const scannerContainer = document.getElementById('scannerContainer');
     const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
     
     if (scannerContainer) scannerContainer.style.display = 'none';
     if (startBtn) startBtn.style.display = 'inline-block';
-    if (stopBtn) stopBtn.style.display = 'none';
     
-    updateStatus('Scanner parado. Clique em "Abrir Scanner" para iniciar novamente.', 'default');
+    updateStatus('Scanner parado.', 'default');
+}
+
+// ========== FUNÇÃO ONSCANSUCCESS MODIFICADA ==========
+function onScanSuccess(decodedText, decodedResult) {
+    const now = Date.now();
+    const code = decodedText.trim();
+    
+    if (!isValidBarcode(code)) return;
+    if (code === lastScanned && (now - lastScanTime) < 2000) return;
+    
+    lastScanned = code;
+    lastScanTime = now;
+    
+    updateStatus(`📷 Código detectado: ${code}`, 'success');
+    
+    // PARAR O SCANNER IMEDIATAMENTE
+    if (html5QrCode) {
+        html5QrCode.pause();
+    }
+    
+    document.getElementById('manualCode').value = code;
+    
+    // Fechar a visualização da câmera
+    const scannerContainer = document.getElementById('scannerContainer');
+    const startBtn = document.getElementById('startBtn');
+    if (scannerContainer) scannerContainer.style.display = 'none';
+    if (startBtn) startBtn.style.display = 'inline-block';
+    
+    isScanning = false;
+    
+    // Buscar o produto
+    searchProduct(code);
 }
 
 // ========== FLUXO DE BUSCA PRINCIPAL ==========
@@ -367,6 +331,27 @@ async function searchInGoogleSheets(ean) {
         return await response.json();
     } catch (error) {
         console.error('Erro ao buscar no Google Sheets:', error);
+        return null;
+    }
+}
+
+async function getAllProductsFromSheets() {
+    if (!GOOGLE_SHEETS_API) {
+        console.warn("URL do Google Sheets não configurada");
+        return null;
+    }
+    
+    try {
+        const url = `${GOOGLE_SHEETS_API}?operation=getAll`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Erro ao buscar todos os produtos:', error);
         return null;
     }
 }
@@ -524,8 +509,9 @@ function showProductInfo(product, isFromDatabase = true) {
     } else {
         imageHtml = `
             <div class="product-image-container">
-                <div style="padding: 40px; text-align: center; color: #6b7280;">
-                    📷 Sem imagem
+                <div class="no-image">
+                    <i class="fas fa-image"></i>
+                    <span>Sem imagem</span>
                 </div>
             </div>
         `;
@@ -538,8 +524,8 @@ function showProductInfo(product, isFromDatabase = true) {
     let priceHtml = '';
     if (product.preco) {
         priceHtml = `
-            <div style="margin-top: 10px; color: #10b981; font-weight: bold; font-size: 16px;">
-                💰 R$ ${product.preco}
+            <div class="product-price">
+                <i class="fas fa-money-bill-wave"></i> R$ ${product.preco}
             </div>
         `;
     }
@@ -549,41 +535,47 @@ function showProductInfo(product, isFromDatabase = true) {
             ${imageHtml}
             
             <div class="product-details">
-                <div class="product-code">📦 EAN: ${product.ean}</div>
+                <div class="product-code">
+                    <i class="fas fa-barcode"></i> EAN: ${product.ean}
+                </div>
                 
                 <div class="product-title">${product.nome}</div>
                 
                 ${product.marca ? `
-                <div class="product-brand">🏭 ${product.marca}</div>
+                <div class="product-brand">
+                    <i class="fas fa-industry"></i> ${product.marca}
+                </div>
                 ` : ''}
                 
                 ${priceHtml}
                 
                 ${product.cadastro ? `
-                <div style="margin-top: 5px; font-size: 12px; color: #6b7280;">
-                    📅 Cadastro: ${product.cadastro}
+                <div class="product-meta">
+                    <i class="fas fa-calendar"></i> Cadastro: ${product.cadastro}
                 </div>
                 ` : ''}
                 
-                <div class="source-badge">${sourceBadge}</div>
+                <div class="source-badge">
+                    <i class="fas fa-database"></i> ${sourceBadge}
+                </div>
             </div>
         </div>
         
-        <div class="api-actions">
+        <div class="action-buttons">
             ${isFromDatabase ? `
             <button class="btn btn-warning" onclick="openEditModal('${product.ean}', '${encodeURIComponent(product.nome)}', '${encodeURIComponent(product.marca || '')}', '${encodeURIComponent(product.imagem || '')}', '${encodeURIComponent(product.preco || '')}', '${product.linha || ''}')">
-                ✏️ Editar
+                <i class="fas fa-edit"></i> Editar
             </button>
             <button class="btn btn-danger" onclick="deleteProduct('${product.ean}', '${product.linha || ''}')">
-                🗑️ Excluir
+                <i class="fas fa-trash"></i> Excluir
             </button>
             ` : `
             <button class="btn btn-success" onclick="saveExternalProductToDatabase('${product.ean}', '${encodeURIComponent(product.nome)}', '${encodeURIComponent(product.marca || '')}', '${encodeURIComponent(product.imagem || '')}', '${encodeURIComponent(product.preco || '')}', 'Banco Local')">
-                💾 Salvar no Banco
+                <i class="fas fa-save"></i> Salvar no Banco
             </button>
             `}
-            <button class="btn" onclick="searchOnline('${product.ean}', '${encodeURIComponent(product.nome)}')">
-                🌐 Pesquisar Online
+            <button class="btn btn-secondary" onclick="searchOnline('${product.ean}', '${encodeURIComponent(product.nome)}')">
+                <i class="fas fa-globe"></i> Pesquisar Online
             </button>
         </div>
     `;
@@ -607,8 +599,9 @@ function showExternalProductInfo(product, code, source) {
     } else {
         imageHtml = `
             <div class="product-image-container">
-                <div style="padding: 40px; text-align: center; color: #6b7280;">
-                    📷 Sem imagem
+                <div class="no-image">
+                    <i class="fas fa-image"></i>
+                    <span>Sem imagem</span>
                 </div>
             </div>
         `;
@@ -617,8 +610,8 @@ function showExternalProductInfo(product, code, source) {
     let priceHtml = '';
     if (product.price) {
         priceHtml = `
-            <div style="margin-top: 10px; color: #10b981; font-weight: bold; font-size: 16px;">
-                💰 ${product.price}
+            <div class="product-price">
+                <i class="fas fa-money-bill-wave"></i> ${product.price}
             </div>
         `;
     }
@@ -628,29 +621,35 @@ function showExternalProductInfo(product, code, source) {
             ${imageHtml}
             
             <div class="product-details">
-                <div class="product-code">📦 EAN: ${code}</div>
+                <div class="product-code">
+                    <i class="fas fa-barcode"></i> EAN: ${code}
+                </div>
                 
                 <div class="product-title">${product.name}</div>
                 
                 ${product.brand ? `
-                <div class="product-brand">🏭 ${product.brand}</div>
+                <div class="product-brand">
+                    <i class="fas fa-industry"></i> ${product.brand}
+                </div>
                 ` : ''}
                 
                 ${priceHtml}
                 
-                <div class="source-badge">Fonte: ${source} <span class="db-missing">EXTERNO</span></div>
+                <div class="source-badge">
+                    <i class="fas fa-external-link-alt"></i> Fonte: ${source} <span class="db-missing">EXTERNO</span>
+                </div>
             </div>
         </div>
         
-        <div class="api-actions">
+        <div class="action-buttons">
             <button class="btn btn-success" onclick="saveExternalProductToDatabase('${code}', '${encodeURIComponent(product.name)}', '${encodeURIComponent(product.brand || '')}', '${encodeURIComponent(product.image || '')}', '${encodeURIComponent(product.price || '')}', '${source}')">
-                💾 Salvar no Banco
+                <i class="fas fa-save"></i> Salvar no Banco
             </button>
-            <button class="btn btn-warning" onclick="editExternalProduct('${code}', '${encodeURIComponent(product.name)}', '${encodeURIComponent(product.brand || '')}', '${encodeURIComponent(product.image || '')}', '${encodeURIComponent(product.price || '')}', '${source}')">
-                ✏️ Editar antes de Salvar
+            <button class="btn btn-warning" onclick="openEditModalForNewProduct('${code}', '${encodeURIComponent(product.name)}', '${encodeURIComponent(product.brand || '')}', '${encodeURIComponent(product.image || '')}', '${encodeURIComponent(product.price || '')}', '${source}')">
+                <i class="fas fa-edit"></i> Editar antes de Salvar
             </button>
-            <button class="btn" onclick="searchOnline('${code}', '${encodeURIComponent(product.name)}')">
-                🌐 Pesquisar Online
+            <button class="btn btn-secondary" onclick="searchOnline('${code}', '${encodeURIComponent(product.name)}')">
+                <i class="fas fa-globe"></i> Pesquisar Online
             </button>
         </div>
     `;
@@ -663,19 +662,21 @@ function showAddToDatabaseForm(code) {
     
     resultDiv.innerHTML = `
         <div class="no-results">
-            <div class="no-results-icon">➕</div>
-            <h3 style="color: #6b7280; margin-bottom: 10px;">Produto não encontrado</h3>
-            <p style="color: #9ca3af; font-size: 14px; margin-bottom: 20px;">
+            <div class="no-results-icon">
+                <i class="fas fa-plus-circle"></i>
+            </div>
+            <h3>Produto não encontrado</h3>
+            <p>
                 Código: <strong>${code}</strong><br>
                 O produto não foi encontrado em nenhuma fonte.
             </p>
             
-            <div style="margin-top: 20px;">
+            <div class="action-buttons">
                 <button class="btn btn-success" onclick="openManualAddModal('${code}')">
-                    ✏️ Cadastrar Manualmente
+                    <i class="fas fa-plus"></i> Cadastrar Manualmente
                 </button>
-                <button class="btn" onclick="searchOnline('${code}')" style="margin-top: 10px;">
-                    🌐 Pesquisar na Web
+                <button class="btn btn-secondary" onclick="searchOnline('${code}')">
+                    <i class="fas fa-globe"></i> Pesquisar na Web
                 </button>
             </div>
         </div>
@@ -689,11 +690,13 @@ function showErrorResult(title, message) {
     
     resultDiv.innerHTML = `
         <div class="no-results">
-            <div class="no-results-icon">⚠️</div>
-            <h3 style="color: #6b7280; margin-bottom: 10px;">${title}</h3>
-            <p style="color: #9ca3af; font-size: 14px;">${message}</p>
-            <button class="btn" onclick="searchManual()" style="margin-top: 20px;">
-                🔄 Tentar novamente
+            <div class="no-results-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>${title}</h3>
+            <p>${message}</p>
+            <button class="btn btn-secondary" onclick="searchManual()">
+                <i class="fas fa-redo"></i> Tentar novamente
             </button>
         </div>
     `;
@@ -707,8 +710,115 @@ function clearResult() {
     resultDiv.classList.remove('active');
 }
 
+// ========== FUNÇÃO PARA MOSTRAR LISTA DE PRODUTOS ==========
+async function showAllProducts() {
+    updateStatus('Carregando todos os produtos...', 'scanning');
+    clearResult();
+    
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+            <div class="loading" style="margin: 20px auto;"></div>
+            <p>Carregando produtos do banco...</p>
+        </div>
+    `;
+    resultDiv.classList.add('active');
+    
+    try {
+        const result = await getAllProductsFromSheets();
+        
+        if (result && result.success && result.products && result.products.length > 0) {
+            displayProductsList(result.products);
+            updateStatus(`✅ ${result.products.length} produtos carregados`, 'success');
+        } else {
+            showNoProductsMessage();
+            updateStatus('❌ Nenhum produto encontrado no banco', 'warning');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar produtos:', error);
+        updateStatus('Erro ao carregar produtos', 'error');
+        showErrorResult('Erro', 'Não foi possível carregar os produtos do banco.');
+    }
+}
+
+function displayProductsList(products) {
+    const resultDiv = document.getElementById('result');
+    
+    let productsHtml = `
+        <div class="products-header">
+            <h3><i class="fas fa-boxes"></i> Produtos no Banco (${products.length})</h3>
+            <button class="btn btn-small btn-primary" onclick="showAllProducts()" style="margin: 0 0 15px 0;">
+                <i class="fas fa-sync-alt"></i> Atualizar
+            </button>
+        </div>
+    `;
+    
+    // Criar uma linha para cada produto
+    products.forEach(product => {
+        let imageHtml = product.imagem ? 
+            `<img src="${product.imagem}" class="product-list-image" alt="${product.nome}" onerror="handleListImageError(this)">` :
+            `<div class="product-list-no-image"><i class="fas fa-image"></i></div>`;
+        
+        let priceHtml = product.preco ? 
+            `<span class="product-list-price">R$ ${product.preco}</span>` :
+            `<span class="product-list-price na">N/A</span>`;
+        
+        productsHtml += `
+            <div class="product-list-item" data-linha="${product.linha || ''}">
+                <div class="product-list-image-container">
+                    ${imageHtml}
+                </div>
+                <div class="product-list-details">
+                    <div class="product-list-name">${product.nome}</div>
+                    <div class="product-list-ean">EAN: ${product.ean}</div>
+                </div>
+                <div class="product-list-brand">${product.marca || 'Sem marca'}</div>
+                <div class="product-list-price-container">
+                    ${priceHtml}
+                </div>
+                <div class="product-list-actions">
+                    <button class="btn-small btn-warning" onclick="openEditModal('${product.ean}', '${encodeURIComponent(product.nome)}', '${encodeURIComponent(product.marca || '')}', '${encodeURIComponent(product.imagem || '')}', '${encodeURIComponent(product.preco || '')}', '${product.linha || ''}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-small btn-danger" onclick="deleteProduct('${product.ean}', '${product.linha || ''}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    resultDiv.innerHTML = `
+        <div class="products-list-container">
+            ${productsHtml}
+        </div>
+    `;
+    
+    resultDiv.classList.add('active');
+}
+
+function showNoProductsMessage() {
+    const resultDiv = document.getElementById('result');
+    
+    resultDiv.innerHTML = `
+        <div class="no-results">
+            <div class="no-results-icon">
+                <i class="fas fa-box-open"></i>
+            </div>
+            <h3>Banco de dados vazio</h3>
+            <p>Nenhum produto cadastrado no banco local.</p>
+            <button class="btn btn-primary" onclick="searchManual()">
+                <i class="fas fa-plus"></i> Adicionar Primeiro Produto
+            </button>
+        </div>
+    `;
+    
+    resultDiv.classList.add('active');
+}
+
 // ========== MODAL FUNCTIONS ==========
 function openEditModal(ean, nome, marca, imagem, preco, linha) {
+    currentModalType = 'edit';
     currentProduct = { ean, linha };
     
     document.getElementById('editNome').value = decodeURIComponent(nome);
@@ -716,10 +826,31 @@ function openEditModal(ean, nome, marca, imagem, preco, linha) {
     document.getElementById('editImagem').value = decodeURIComponent(imagem);
     document.getElementById('editPreco').value = decodeURIComponent(preco);
     
+    // Atualizar título do modal
+    document.querySelector('#editModal .modal-header h3').innerHTML = '<i class="fas fa-edit"></i> Editar Produto';
+    
+    document.getElementById('editModal').classList.remove('hidden');
+    document.getElementById('editModal').classList.add('active');
+}
+
+function openEditModalForNewProduct(ean, nome, marca, imagem, preco, source) {
+    currentModalType = 'new';
+    currentProduct = { ean, source };
+    
+    document.getElementById('editNome').value = decodeURIComponent(nome);
+    document.getElementById('editMarca').value = decodeURIComponent(marca);
+    document.getElementById('editImagem').value = decodeURIComponent(imagem);
+    document.getElementById('editPreco').value = decodeURIComponent(preco);
+    
+    // Atualizar título do modal
+    document.querySelector('#editModal .modal-header h3').innerHTML = '<i class="fas fa-plus-circle"></i> Cadastrar Novo Produto';
+    
+    document.getElementById('editModal').classList.remove('hidden');
     document.getElementById('editModal').classList.add('active');
 }
 
 function openManualAddModal(code) {
+    currentModalType = 'new';
     currentProduct = { ean: code };
     
     document.getElementById('editNome').value = '';
@@ -727,12 +858,18 @@ function openManualAddModal(code) {
     document.getElementById('editImagem').value = '';
     document.getElementById('editPreco').value = '';
     
+    // Atualizar título do modal
+    document.querySelector('#editModal .modal-header h3').innerHTML = '<i class="fas fa-plus-circle"></i> Cadastrar Novo Produto';
+    
+    document.getElementById('editModal').classList.remove('hidden');
     document.getElementById('editModal').classList.add('active');
 }
 
 function closeModal() {
     document.getElementById('editModal').classList.remove('active');
+    document.getElementById('editModal').classList.add('hidden');
     currentProduct = null;
+    currentModalType = 'edit';
 }
 
 async function saveEditedProduct() {
@@ -754,74 +891,33 @@ async function saveEditedProduct() {
         marca: marca,
         imagem: imagem,
         preco: preco,
-        fonte: currentProduct.linha ? 'Editado' : 'Manual'
+        fonte: currentModalType === 'edit' ? 'Editado' : 'API Externa'
     };
     
-    if (currentProduct.linha) {
+    if (currentProduct.linha && currentModalType === 'edit') {
         productData.linha = currentProduct.linha;
     }
     
     updateStatus('Salvando produto...', 'scanning');
     
-    const result = currentProduct.linha ? 
-        await updateInGoogleSheets(productData) : 
-        await saveToGoogleSheets(productData);
-    
-    if (result.success) {
-        updateStatus('✅ Produto salvo no banco local!', 'success');
-        closeModal();
-        setTimeout(() => searchProduct(currentProduct.ean), 1000);
+    let result;
+    if (currentModalType === 'edit') {
+        result = await updateInGoogleSheets(productData);
     } else {
-        updateStatus(`❌ Erro ao salvar: ${result.error || result.message}`, 'error');
+        result = await saveToGoogleSheets(productData);
     }
-}
-
-function editExternalProduct(code, name, brand, image, price, source) {
-    currentProduct = { ean: code, source };
-    
-    document.getElementById('editNome').value = decodeURIComponent(name);
-    document.getElementById('editMarca').value = decodeURIComponent(brand);
-    document.getElementById('editImagem').value = decodeURIComponent(image);
-    document.getElementById('editPreco').value = decodeURIComponent(price);
-    
-    const saveBtn = document.getElementById('saveEditBtn');
-    if (saveBtn) {
-        saveBtn.onclick = () => saveEditedExternalProduct();
-    }
-    
-    document.getElementById('editModal').classList.add('active');
-}
-
-async function saveEditedExternalProduct() {
-    const nome = document.getElementById('editNome').value.trim();
-    const marca = document.getElementById('editMarca').value.trim();
-    const imagem = document.getElementById('editImagem').value.trim();
-    const preco = document.getElementById('editPreco').value.trim();
-    
-    if (!nome) {
-        showAlert('Por favor, informe o nome do produto', 'warning');
-        return;
-    }
-    
-    if (!currentProduct) return;
-    
-    const productData = {
-        ean: currentProduct.ean,
-        nome: nome,
-        marca: marca,
-        imagem: imagem,
-        preco: preco,
-        fonte: currentProduct.source || 'API Externa'
-    };
-    
-    updateStatus('Salvando produto...', 'scanning');
-    
-    const result = await saveToGoogleSheets(productData);
     
     if (result.success) {
         updateStatus('✅ Produto salvo no banco local!', 'success');
         closeModal();
-        setTimeout(() => searchProduct(currentProduct.ean), 1000);
+        
+        // Se estava na lista de produtos, recarregar a lista
+        if (document.querySelector('.products-list-container')) {
+            setTimeout(() => showAllProducts(), 1000);
+        } else {
+            // Senão, buscar o produto novamente
+            setTimeout(() => searchProduct(currentProduct.ean), 1000);
+        }
     } else {
         updateStatus(`❌ Erro ao salvar: ${result.error || result.message}`, 'error');
     }
@@ -862,16 +958,25 @@ async function deleteProduct(ean, linha) {
     if (result.success) {
         updateStatus('✅ Produto excluído do banco local!', 'success');
         
-        const resultDiv = document.getElementById('result');
-        resultDiv.innerHTML = `
-            <div class="no-results">
-                <div class="no-results-icon">🗑️</div>
-                <h3 style="color: #6b7280; margin-bottom: 10px;">Produto excluído</h3>
-                <p style="color: #9ca3af; font-size: 14px;">
-                    Código: <strong>${ean}</strong>
-                </p>
-            </div>
-        `;
+        // Se estava na lista de produtos, recarregar a lista
+        if (document.querySelector('.products-list-container')) {
+            setTimeout(() => showAllProducts(), 1000);
+        } else {
+            // Senão, mostrar mensagem
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div class="no-results">
+                    <div class="no-results-icon">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                    <h3>Produto excluído</h3>
+                    <p>
+                        Código: <strong>${ean}</strong><br>
+                        O produto foi removido do banco local.
+                    </p>
+                </div>
+            `;
+        }
     } else {
         updateStatus(`❌ Erro ao excluir: ${result.error || result.message}`, 'error');
     }
@@ -883,11 +988,11 @@ function updateStatus(message, type = 'default') {
     
     let icon = '';
     switch(type) {
-        case 'success': icon = '✅'; break;
-        case 'error': icon = '❌'; break;
-        case 'warning': icon = '⚠️'; break;
+        case 'success': icon = '<i class="fas fa-check-circle"></i>'; break;
+        case 'error': icon = '<i class="fas fa-times-circle"></i>'; break;
+        case 'warning': icon = '<i class="fas fa-exclamation-triangle"></i>'; break;
         case 'scanning': icon = '<div class="loading"></div>'; break;
-        default: icon = 'ℹ️';
+        default: icon = '<i class="fas fa-info-circle"></i>';
     }
     
     statusDiv.innerHTML = `${icon} ${message}`;
@@ -914,8 +1019,18 @@ function validateEAN13(code) {
 function handleImageError(img) {
     img.onerror = null;
     img.parentElement.innerHTML = `
-        <div style="padding: 40px; text-align: center; color: #6b7280;">
-            📷 Imagem não carregada
+        <div class="no-image">
+            <i class="fas fa-image"></i>
+            <span>Imagem não carregada</span>
+        </div>
+    `;
+}
+
+function handleListImageError(img) {
+    img.onerror = null;
+    img.parentElement.innerHTML = `
+        <div class="product-list-no-image">
+            <i class="fas fa-image"></i>
         </div>
     `;
 }
@@ -936,43 +1051,18 @@ function checkAPIStatus() {
     }
 }
 
-// ========== FUNÇÃO ONSCANSUCCESS DO SCANNER ==========
-function onScanSuccess(decodedText, decodedResult) {
-    const now = Date.now();
-    const code = decodedText.trim();
-    
-    if (!isValidBarcode(code)) return;
-    if (code === lastScanned && (now - lastScanTime) < 2000) return;
-    
-    lastScanned = code;
-    lastScanTime = now;
-    
-    updateStatus(`📷 Código detectado: ${code}`, 'success');
-    
-    if (html5QrCode) html5QrCode.pause();
-    
-    document.getElementById('manualCode').value = code;
-    searchProduct(code);
-    
-    setTimeout(() => {
-        if (html5QrCode && isScanning) {
-            html5QrCode.resume();
-            updateStatus('Pronto para escanear novamente...', 'scanning');
-        }
-    }, 3000);
-}
-
 // ========== EXPORT FUNCTIONS TO GLOBAL SCOPE ==========
-// Todas as funções que precisam ser acessíveis globalmente
 window.searchManual = searchManual;
 window.initScanner = initScanner;
 window.stopScanner = stopScanner;
 window.searchOnline = searchOnline;
 window.openEditModal = openEditModal;
+window.openEditModalForNewProduct = openEditModalForNewProduct;
 window.openManualAddModal = openManualAddModal;
 window.closeModal = closeModal;
 window.saveEditedProduct = saveEditedProduct;
 window.deleteProduct = deleteProduct;
 window.saveExternalProductToDatabase = saveExternalProductToDatabase;
-window.editExternalProduct = editExternalProduct;
+window.showAllProducts = showAllProducts;
 window.handleImageError = handleImageError;
+window.handleListImageError = handleListImageError;
