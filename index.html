@@ -1,797 +1,724 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Scanner de Produtos</title>
-  <!-- QuaggaJS -->
-  <script src="https://unpkg.com/@ericblade/quagga2/dist/quagga.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner de Códigos de Barras</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    .container {
-      background: #fff;
-      width: 100%;
-      max-width: 450px;
-      padding: 20px;
-      border-radius: 18px;
-      box-shadow: 0 15px 40px rgba(0,0,0,0.35);
-    }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 15px;
-      font-size: 22px;
-      color: #2c5364;
-    }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
 
-    .input {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 12px;
-      border: 2px solid #ddd;
-      margin-bottom: 10px;
-      box-sizing: border-box;
-    }
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
 
-    .btn {
-      width: 100%;
-      padding: 14px;
-      font-size: 16px;
-      border: none;
-      border-radius: 12px;
-      background: #2c5364;
-      color: #fff;
-      cursor: pointer;
-      transition: 0.3s;
-      margin-bottom: 10px;
-      font-weight: 600;
-    }
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
 
-    .btn:hover {
-      background: #203a43;
-      transform: translateY(-2px);
-    }
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
 
-    #scanner {
-      display: none;
-      margin-top: 10px;
-      border-radius: 12px;
-      overflow: hidden;
-      position: relative;
-      width: 100%;
-      height: 350px;
-      background: #000;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
+        .content {
+            padding: 25px;
+        }
 
-    .scanner-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 10;
-    }
+        .input-group {
+            margin-bottom: 20px;
+        }
 
-    .focus-area {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 85%;
-      height: 80px;
-      border: 3px solid #00ff00;
-      box-shadow: 
-        0 0 0 1000px rgba(0, 0, 0, 0.7),
-        0 0 30px rgba(0, 255, 0, 0.5);
-      border-radius: 10px;
-      animation: pulse 2s infinite;
-    }
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            transition: border-color 0.3s;
+        }
 
-    .focus-line {
-      position: absolute;
-      top: 50%;
-      left: 0;
-      width: 100%;
-      height: 2px;
-      background: rgba(0, 255, 0, 0.5);
-      animation: scan 2s linear infinite;
-    }
+        .input-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
 
-    @keyframes pulse {
-      0%, 100% { border-color: #00ff00; }
-      50% { border-color: #00cc00; }
-    }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
 
-    @keyframes scan {
-      0% { top: 30%; opacity: 1; }
-      50% { top: 70%; opacity: 0.8; }
-      100% { top: 30%; opacity: 1; }
-    }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+        }
 
-    #scanner video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+        .btn-secondary {
+            background: #6b7280;
+        }
 
-    .resultado {
-      display: none;
-      margin-top: 15px;
-      background: #f4f6f8;
-      border-radius: 14px;
-      padding: 15px;
-      text-align: center;
-      border: 2px solid #e0e0e0;
-    }
+        .btn-danger {
+            background: #ef4444;
+        }
 
-    .resultado img {
-      max-width: 100%;
-      max-height: 220px;
-      object-fit: contain;
-      margin-bottom: 10px;
-      border-radius: 8px;
-    }
+        .scanner-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 20px 0;
+            background: #000;
+            display: none;
+        }
 
-    .linha {
-      margin: 8px 0;
-      font-size: 15px;
-      text-align: left;
-      padding: 5px 10px;
-      background: white;
-      border-radius: 8px;
-    }
+        #qr-reader {
+            width: 100% !important;
+        }
 
-    .scanner-controls {
-      display: none;
-      gap: 10px;
-      margin-top: 15px;
-    }
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
 
-    .scanner-controls .btn {
-      flex: 1;
-      padding: 12px;
-      font-size: 14px;
-    }
+        .focus-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 150px;
+            border: 4px solid #00ff00;
+            border-radius: 10px;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.6),
+                        0 0 30px rgba(0, 255, 0, 0.5);
+        }
 
-    .btn-parar {
-      background: #dc3545 !important;
-    }
+        .scan-line {
+            position: absolute;
+            top: 20%;
+            left: 5%;
+            right: 5%;
+            height: 3px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                #00ff00 50%, 
+                transparent 100%);
+            animation: scan 2s ease-in-out infinite;
+        }
 
-    .btn-parar:hover {
-      background: #c82333 !important;
-    }
+        @keyframes scan {
+            0%, 100% { top: 20%; }
+            50% { top: 80%; }
+        }
 
-    .btn-foco {
-      background: #28a745 !important;
-    }
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: #f3f4f6;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #4b5563;
+        }
 
-    .btn-foco:hover {
-      background: #218838 !important;
-    }
+        .status.scanning {
+            background: #d1fae5;
+            color: #065f46;
+        }
 
-    .mensagem {
-      text-align: center;
-      color: #333;
-      font-size: 14px;
-      margin: 10px 0;
-      padding: 12px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      border-left: 4px solid #2c5364;
-    }
+        .result {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
 
-    .sucesso {
-      background: #d4edda !important;
-      border-left: 4px solid #28a745 !important;
-    }
+        .result.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
 
-    .erro {
-      background: #f8d7da !important;
-      border-left: 4px solid #dc3545 !important;
-    }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    .aviso {
-      background: #fff3cd !important;
-      border-left: 4px solid #ffc107 !important;
-    }
+        .product-info {
+            margin-top: 15px;
+        }
 
-    .loading {
-      text-align: center;
-      padding: 20px;
-      color: #666;
-    }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
 
-    .spinner {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #3498db;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 15px;
-    }
+        .info-row:last-child {
+            border-bottom: none;
+        }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+        .info-label {
+            font-weight: 600;
+            color: #4b5563;
+        }
 
-    .dicas {
-      background: #e3f2fd;
-      border-radius: 10px;
-      padding: 15px;
-      margin-top: 15px;
-      font-size: 13px;
-    }
+        .info-value {
+            color: #111827;
+            text-align: right;
+            max-width: 60%;
+        }
 
-    .dicas h3 {
-      margin-top: 0;
-      color: #1976d2;
-    }
+        .product-image {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
 
-    .dicas ul {
-      padding-left: 20px;
-      margin: 8px 0;
-    }
+        .error {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            text-align: center;
+        }
 
-    .dicas li {
-      margin-bottom: 5px;
-    }
+        .camera-selector {
+            margin: 10px 0;
+            text-align: center;
+        }
 
-    .zoom-controls {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      z-index: 20;
-      display: none;
-    }
+        select {
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 100%;
+        }
 
-    .zoom-btn {
-      background: rgba(0,0,0,0.7);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      margin: 5px;
-      font-size: 18px;
-      cursor: pointer;
-    }
+        .hidden {
+            display: none;
+        }
 
-    .foco-status {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 5px 10px;
-      border-radius: 15px;
-      font-size: 12px;
-      z-index: 20;
-    }
+        .torch-control {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 20;
+        }
 
-    .teste-api {
-      margin-top: 15px;
-      text-align: center;
-    }
+        .torch-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    .teste-api .btn {
-      background: #6c757d;
-      font-size: 14px;
-      padding: 10px;
-    }
-  </style>
+        .hint {
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 10px;
+        }
+    </style>
+    <!-- Bibliotecas simplificadas -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
-
-<div class="container">
-  <h1>📦 Scanner de Produtos</h1>
-
-  <input
-    type="text"
-    id="codigoManual"
-    class="input"
-    placeholder="Digite o código de barras para teste"
-    inputmode="numeric"
-    value="7891000315507"
-  />
-
-  <button class="btn" onclick="buscarCodigoManual()">🔍 Buscar Código</button>
-  <button class="btn" onclick="iniciarScanner()" id="btnScanner">📷 Abrir Scanner</button>
-
-  <div class="teste-api">
-    <button class="btn" onclick="testarAPI()">🔄 Testar Conexão com API</button>
-  </div>
-
-  <div class="mensagem" id="mensagemScanner">
-    <strong>Dicas para melhor leitura:</strong><br>
-    1. Mantenha o código na área verde<br>
-    2. Certifique-se de ter boa iluminação<br>
-    3. Evite reflexos no código
-  </div>
-
-  <div id="scanner">
-    <div class="scanner-overlay">
-      <div class="focus-area">
-        <div class="focus-line"></div>
-      </div>
-    </div>
-    <div class="foco-status" id="focoStatus">Foco: automático</div>
-    <div class="zoom-controls" id="zoomControls">
-      <button class="zoom-btn" onclick="ajustarZoom(-0.2)">-</button>
-      <button class="zoom-btn" onclick="ajustarZoom(0.2)">+</button>
-    </div>
-  </div>
-
-  <div class="scanner-controls" id="scannerControls">
-    <button class="btn btn-parar" onclick="pararScanner()">⏹️ Parar</button>
-    <button class="btn btn-foco" onclick="forcarFoco()">🔍 Forçar Foco</button>
-    <button class="btn" onclick="alternarCamera()">🔄 Alternar Câmera</button>
-  </div>
-
-  <div class="resultado" id="resultado">
-    <!-- Conteúdo será preenchido dinamicamente -->
-  </div>
-
-  <div class="dicas" id="dicasScanner" style="display: none;">
-    <h3>🔍 Problemas com foco?</h3>
-    <ul>
-      <li>Toque na tela na área do código para focar manualmente</li>
-      <li>Use o botão "Forçar Foco" se a câmera não focar automaticamente</li>
-      <li>Para códigos pequenos: aproxime a câmera</li>
-      <li>Para códigos grandes: afaste um pouco</li>
-      <li>Mantenha o código paralelo à câmera</li>
-    </ul>
-  </div>
-</div>
-
-<script>
-let scannerAtivo = false;
-let cameraFrente = false;
-let ultimoCodigoLido = '';
-let timeoutDetecao;
-let streamVideo = null;
-let zoomAtual = 1.0;
-let track = null;
-
-// Função para testar a API
-function testarAPI() {
-  const mensagemDiv = document.getElementById("mensagemScanner");
-  mensagemDiv.className = "mensagem aviso";
-  mensagemDiv.innerHTML = '<div class="spinner"></div>Testando conexão com a API...';
-  
-  // Testar com um código conhecido (Coca-Cola 350ml)
-  const codigoTeste = "7894900010015";
-  
-  buscarProdutoAPI(codigoTeste)
-    .then(data => {
-      if (data.status === 1) {
-        mensagemDiv.className = "mensagem sucesso";
-        mensagemDiv.innerHTML = '✅ <strong>Conexão com API OK!</strong><br>A API está funcionando perfeitamente.';
-        console.log("API testada com sucesso:", data);
-      } else {
-        mensagemDiv.className = "mensagem aviso";
-        mensagemDiv.innerHTML = '⚠️ <strong>API funcionando, mas produto não encontrado</strong><br>Tente outro código como: 7891000315507';
-      }
-    })
-    .catch(err => {
-      console.error("Erro no teste da API:", err);
-      mensagemDiv.className = "mensagem erro";
-      mensagemDiv.innerHTML = '❌ <strong>Erro na conexão com API</strong><br>' + err.message;
-    });
-}
-
-// Função principal para buscar na API (com múltiplos fallbacks)
-async function buscarProdutoAPI(codigo) {
-  console.log(`Buscando produto com código: ${codigo}`);
-  
-  // Lista de proxies gratuitas (fallbacks)
-  const proxies = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)}`,
-    `https://corsproxy.io/?${encodeURIComponent(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)}`,
-    // Tentativa direta (pode falhar por CORS em alguns navegadores)
-    `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`
-  ];
-  
-  let ultimoErro = null;
-  
-  // Tentar cada proxy até um funcionar
-  for (const url of proxies) {
-    try {
-      console.log(`Tentando proxy: ${url.substring(0, 50)}...`);
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'ScannerApp/1.0'
-        },
-        mode: 'cors'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log("Resposta da API:", data);
-      return data;
-      
-    } catch (err) {
-      console.log(`Proxy falhou: ${err.message}`);
-      ultimoErro = err;
-      continue; // Tenta o próximo proxy
-    }
-  }
-  
-  throw ultimoErro || new Error("Todos os proxies falharam");
-}
-
-function iniciarScanner() {
-  if (scannerAtivo) return;
-
-  const scannerDiv = document.getElementById("scanner");
-  const mensagemDiv = document.getElementById("mensagemScanner");
-  const controlsDiv = document.getElementById("scannerControls");
-  const btnScanner = document.getElementById("btnScanner");
-  const zoomControls = document.getElementById("zoomControls");
-  const dicasDiv = document.getElementById("dicasScanner");
-  
-  scannerDiv.style.display = "block";
-  mensagemDiv.className = "mensagem";
-  mensagemDiv.innerHTML = "<strong>Iniciando câmera...</strong><br>Permita o acesso à câmera quando solicitado";
-  controlsDiv.style.display = "flex";
-  zoomControls.style.display = "flex";
-  dicasDiv.style.display = "block";
-  btnScanner.style.display = "none";
-  
-  document.getElementById("codigoManual").style.display = "none";
-  document.querySelector('button[onclick="buscarCodigoManual()"]').style.display = "none";
-  document.querySelector('.teste-api').style.display = "none";
-
-  const constraints = {
-    video: {
-      facingMode: cameraFrente ? "user" : "environment",
-      width: { min: 640, ideal: 1280, max: 1920 },
-      height: { min: 480, ideal: 720, max: 1080 },
-      frameRate: { ideal: 30, max: 60 }
-    }
-  };
-
-  navigator.mediaDevices.getUserMedia(constraints)
-    .then(function(stream) {
-      streamVideo = stream;
-      track = stream.getVideoTracks()[0];
-      
-      if (track && track.getCapabilities) {
-        const capabilities = track.getCapabilities();
-        if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-          track.applyConstraints({
-            advanced: [{ focusMode: 'continuous' }]
-          }).then(() => {
-            document.getElementById("focoStatus").textContent = "Foco: automático";
-          });
-        }
-        
-        if (capabilities.zoom) {
-          zoomAtual = track.getSettings().zoom || 1.0;
-        }
-      }
-
-      iniciarQuagga(stream);
-    })
-    .catch(function(err) {
-      console.error("Erro ao acessar câmera:", err);
-      mensagemDiv.className = "mensagem erro";
-      mensagemDiv.innerHTML = `<strong>Erro ao acessar câmera:</strong><br>${err.message}`;
-      pararScanner();
-    });
-}
-
-function iniciarQuagga(stream) {
-  const scannerDiv = document.getElementById("scanner");
-  const mensagemDiv = document.getElementById("mensagemScanner");
-
-  Quagga.init({
-    inputStream: {
-      type: "LiveStream",
-      target: scannerDiv,
-      constraints: {
-        deviceId: streamVideo ? { exact: stream.getVideoTracks()[0].getSettings().deviceId } : undefined,
-        facingMode: cameraFrente ? "user" : "environment",
-        width: { min: 640, ideal: 1280 },
-        height: { min: 480, ideal: 720 }
-      },
-      area: {
-        top: "25%",
-        right: "10%",
-        left: "10%",
-        bottom: "25%"
-      }
-    },
-    locator: {
-      patchSize: "x-large",
-      halfSample: true
-    },
-    frequency: 30,
-    numOfWorkers: navigator.hardwareConcurrency || 2,
-    decoder: {
-      readers: [
-        "ean_reader",
-        "ean_8_reader", 
-        "upc_reader",
-        "upc_e_reader",
-        "code_128_reader",
-        "code_39_reader",
-        "code_93_reader"
-      ]
-    },
-    locate: true,
-    debug: {
-      drawScanline: true
-    }
-  }, function(err) {
-    if (err) {
-      console.error("Erro ao iniciar Quagga:", err);
-      mensagemDiv.className = "mensagem erro";
-      mensagemDiv.innerHTML = `<strong>Erro no scanner:</strong><br>${err.message}`;
-      pararScanner();
-      return;
-    }
-    
-    Quagga.start();
-    scannerAtivo = true;
-    mensagemDiv.className = "mensagem sucesso";
-    mensagemDiv.innerHTML = "<strong>✓ Scanner ativo!</strong><br>Aponte para o código de barras dentro da área verde";
-    
-    scannerDiv.addEventListener('click', focarNoPonto);
-  });
-
-  Quagga.offDetected();
-  Quagga.onDetected(function(data) {
-    if (!scannerAtivo) return;
-    
-    const codigo = data.codeResult.code;
-    const now = Date.now();
-    
-    if (codigo === ultimoCodigoLido && (now - timeoutDetecao) < 1500) {
-      return;
-    }
-    
-    ultimoCodigoLido = codigo;
-    timeoutDetecao = now;
-    
-    const focusArea = document.querySelector('.focus-area');
-    focusArea.style.borderColor = '#00ff00';
-    focusArea.style.boxShadow = '0 0 0 1000px rgba(0, 0, 0, 0.7), 0 0 50px rgba(0, 255, 0, 0.8)';
-    setTimeout(() => {
-      focusArea.style.borderColor = '';
-      focusArea.style.boxShadow = '';
-    }, 500);
-    
-    Quagga.stop();
-    scannerAtivo = false;
-    
-    buscarProduto(codigo);
-    
-    const mensagemDiv = document.getElementById("mensagemScanner");
-    mensagemDiv.className = "mensagem";
-    mensagemDiv.innerHTML = `<strong>Código lido: ${codigo}</strong><br>Buscando informações...`;
-    
-    setTimeout(() => {
-      if (!scannerAtivo) {
-        iniciarScanner();
-      }
-    }, 2000);
-  });
-}
-
-function forcarFoco() {
-  if (!track || !track.getCapabilities) return;
-  
-  const capabilities = track.getCapabilities();
-  if (capabilities.focusMode) {
-    const modos = ['manual', 'continuous', 'single-shot'];
-    let modoAtual = track.getSettings().focusMode || 'continuous';
-    let proximoModo = modos[(modos.indexOf(modoAtual) + 1) % modos.length];
-    
-    track.applyConstraints({
-      advanced: [{ focusMode: proximoModo }]
-    }).then(() => {
-      document.getElementById("focoStatus").textContent = `Foco: ${proximoModo}`;
-      const mensagemDiv = document.getElementById("mensagemScanner");
-      mensagemDiv.className = "mensagem";
-      mensagemDiv.innerHTML = `🔍 <strong>Modo de foco: ${proximoModo}</strong>`;
-    });
-  }
-}
-
-function focarNoPonto(event) {
-  if (!track || !track.getCapabilities) return;
-  
-  const scannerDiv = document.getElementById("scanner");
-  const rect = scannerDiv.getBoundingClientRect();
-  const x = (event.clientX - rect.left) / rect.width;
-  const y = (event.clientY - rect.top) / rect.height;
-  
-  const capabilities = track.getCapabilities();
-  if (capabilities.focusMode && capabilities.focusMode.includes('manual')) {
-    track.applyConstraints({
-      advanced: [
-        { 
-          focusMode: 'manual',
-          focusDistance: Math.max(0.1, Math.min(1.0, y))
-        }
-      ]
-    }).then(() => {
-      const focusArea = document.querySelector('.focus-area');
-      focusArea.style.borderColor = '#ff9900';
-      focusArea.style.animation = 'none';
-      setTimeout(() => {
-        focusArea.style.borderColor = '';
-        focusArea.style.animation = '';
-      }, 1000);
-    });
-  }
-}
-
-function ajustarZoom(delta) {
-  if (!track || !track.getCapabilities) return;
-  
-  const capabilities = track.getCapabilities();
-  if (capabilities.zoom) {
-    zoomAtual = Math.max(
-      capabilities.zoom.min || 1.0,
-      Math.min(capabilities.zoom.max || 5.0, zoomAtual + delta)
-    );
-    
-    track.applyConstraints({
-      advanced: [{ zoom: zoomAtual }]
-    });
-  }
-}
-
-function pararScanner() {
-  if (scannerAtivo) {
-    Quagga.stop();
-    scannerAtivo = false;
-  }
-  
-  if (streamVideo) {
-    streamVideo.getTracks().forEach(track => track.stop());
-    streamVideo = null;
-    track = null;
-  }
-
-  const scannerDiv = document.getElementById("scanner");
-  const mensagemDiv = document.getElementById("mensagemScanner");
-  const controlsDiv = document.getElementById("scannerControls");
-  const btnScanner = document.getElementById("btnScanner");
-  const zoomControls = document.getElementById("zoomControls");
-  const dicasDiv = document.getElementById("dicasScanner");
-  
-  scannerDiv.style.display = "none";
-  mensagemDiv.className = "mensagem";
-  mensagemDiv.innerHTML = "<strong>Dicas para melhor leitura:</strong><br>1. Mantenha o código na área verde<br>2. Certifique-se de ter boa iluminação<br>3. Evite reflexos no código";
-  controlsDiv.style.display = "none";
-  zoomControls.style.display = "none";
-  dicasDiv.style.display = "none";
-  btnScanner.style.display = "block";
-  
-  document.getElementById("codigoManual").style.display = "block";
-  document.querySelector('button[onclick="buscarCodigoManual()"]').style.display = "block";
-  document.querySelector('.teste-api').style.display = "block";
-  
-  scannerDiv.removeEventListener('click', focarNoPonto);
-}
-
-function alternarCamera() {
-  pararScanner();
-  cameraFrente = !cameraFrente;
-  setTimeout(() => {
-    iniciarScanner();
-  }, 300);
-}
-
-function buscarCodigoManual() {
-  const codigo = document.getElementById("codigoManual").value.trim();
-  if (!codigo) {
-    alert("Digite um código válido");
-    return;
-  }
-  buscarProduto(codigo);
-}
-
-function buscarProduto(codigo) {
-  const resultado = document.getElementById("resultado");
-  resultado.style.display = "block";
-  resultado.innerHTML = `
-    <div class="loading">
-      <div class="spinner"></div>
-      <div style="margin-bottom: 10px;">🔍 Buscando produto...</div>
-      <div style="font-size: 12px; color: #666;">Código: ${codigo}</div>
-    </div>
-  `;
-
-  buscarProdutoAPI(codigo)
-    .then(data => {
-      resultado.style.display = "block";
-      
-      if (data.status !== 1 || !data.product) {
-        resultado.innerHTML = `
-          <div class="linha"><strong>Código:</strong> ${codigo}</div>
-          <div class="mensagem aviso">
-            <strong>Produto não encontrado</strong><br>
-            Este código não está na base do Open Food Facts.<br><br>
-            <small>Códigos de teste que funcionam:<br>
-            7891000315507 (Nescau), 7894900010015 (Coca-Cola)</small>
-          </div>
-        `;
-        return;
-      }
-
-      const p = data.product;
-      let imagemHTML = '';
-      
-      if (p.image_front_url || p.image_url) {
-        const imgUrl = p.image_front_url || p.image_url;
-        imagemHTML = `<img src="${imgUrl}" style="max-width:100%; max-height:220px; border-radius:8px; margin-bottom:15px;" alt="${p.product_name || 'Produto'}">`;
-      }
-
-      resultado.innerHTML = `
-        ${imagemHTML}
-        <div class="linha"><strong>Código:</strong> ${codigo}</div>
-        <div class="linha"><strong>Produto:</strong> ${p.product_name || p.product_name_pt || p.product_name_en || "Não informado"}</div>
-        <div class="linha"><strong>Marca:</strong> ${p.brands || p.brand_owner || "Não informada"}</div>
-        <div class="linha"><strong>Quantidade:</strong> ${p.quantity || p.product_quantity || "Não informada"}</div>
-        <div class="linha"><strong>Categorias:</strong> ${p.categories || "Não informado"}</div>
-        ${p.nutriscore_grade ? `<div class="linha"><strong>Nutri-Score:</strong> ${p.nutriscore_grade.toUpperCase()}</div>` : ''}
-      `;
-    })
-    .catch(err => {
-      console.error("Erro na busca:", err);
-      resultado.innerHTML = `
-        <div class="mensagem erro">
-          <strong>Erro ao buscar produto</strong><br>
-          ${err.message}<br><br>
-          <button class="btn" style="padding:8px;font-size:14px;" onclick="testarAPI()">
-            🔄 Testar Conexão com API
-          </button>
+    <div class="container">
+        <div class="header">
+            <h1>📦 Scanner de Produtos</h1>
+            <p>Escaneie qualquer código de barras EAN-13</p>
         </div>
-      `;
-    });
-}
 
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && scannerAtivo) {
-    pararScanner();
-  }
-});
+        <div class="content">
+            <div class="input-group">
+                <input type="text" 
+                       id="manual-code" 
+                       placeholder="Digite o código de barras (13 dígitos)"
+                       maxlength="13">
+                <button class="btn" onclick="searchManual()">
+                    🔍 Buscar Produto
+                </button>
+            </div>
 
-// Testar API automaticamente ao carregar a página
-window.addEventListener('load', function() {
-  console.log("Scanner de produtos carregado!");
-  
-  // Pré-carregar alguns códigos de teste no campo manual
-  document.getElementById("codigoManual").value = "7891000315507";
-  
-  // Teste automático da API (opcional, descomente se quiser)
-  // setTimeout(testarAPI, 1000);
-});
-</script>
+            <button class="btn" id="start-scanner" onclick="startScanner()">
+                📷 Iniciar Scanner
+            </button>
 
+            <div class="camera-selector hidden" id="camera-selector">
+                <select id="camera-select">
+                    <option value="">Selecione uma câmera...</option>
+                </select>
+            </div>
+
+            <div class="scanner-container" id="scanner-container">
+                <div id="qr-reader"></div>
+                <div class="scanner-overlay">
+                    <div class="focus-frame">
+                        <div class="scan-line"></div>
+                    </div>
+                </div>
+                <div class="torch-control">
+                    <button class="torch-btn" id="torch-btn" onclick="toggleTorch()">🔦</button>
+                </div>
+            </div>
+
+            <div class="status" id="status">
+                Pronto para escanear
+            </div>
+
+            <div class="controls hidden" id="scanner-controls">
+                <button class="btn btn-secondary" onclick="stopScanner()">
+                    ⏹️ Parar Scanner
+                </button>
+                <button class="btn" onclick="switchCamera()">
+                    🔄 Alternar Câmera
+                </button>
+            </div>
+
+            <div class="result" id="result">
+                <!-- Resultado será inserido aqui -->
+            </div>
+
+            <div class="hint">
+                Dica: Use a câmera traseira e mantenha o código estável
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configurações
+        let scanner = null;
+        let currentCameraId = null;
+        let cameras = [];
+        let isTorchOn = false;
+        let lastScannedCode = '';
+        let lastScanTime = 0;
+
+        // Códigos de teste conhecidos
+        const TEST_CODES = [
+            '7891000315507', // Nescau
+            '7894900010015', // Coca-Cola
+            '7891910000197', // Arroz Tio João
+            '7896036090015', // Pão de Forma Pullman
+            '7892840816841', // Leite Ninho
+            '7896051111027', // Óleo Soja
+            '7891150002658', // Café Pilão
+            '7891999010026', // Feijão Carioca
+            '7894650050011', // Sabão em Pó OMO
+            '7891024115109'  // Fralda Pampers
+        ];
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCameras();
+            document.getElementById('manual-code').value = TEST_CODES[0];
+        });
+
+        // Carregar câmeras disponíveis
+        async function loadCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                cameras = devices.filter(device => device.kind === 'videoinput');
+                
+                const select = document.getElementById('camera-select');
+                select.innerHTML = '<option value="">Selecione uma câmera...</option>';
+                
+                cameras.forEach((camera, index) => {
+                    const label = camera.label || `Câmera ${index + 1}`;
+                    const option = document.createElement('option');
+                    option.value = camera.deviceId;
+                    option.textContent = label;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar câmeras:', error);
+            }
+        }
+
+        // Iniciar scanner
+        async function startScanner() {
+            try {
+                document.getElementById('start-scanner').classList.add('hidden');
+                document.getElementById('camera-selector').classList.remove('hidden');
+                document.getElementById('scanner-controls').classList.remove('hidden');
+                
+                const status = document.getElementById('status');
+                status.textContent = 'Iniciando câmera...';
+                status.classList.add('scanning');
+                
+                // Configuração da câmera
+                const config = {
+                    fps: 30,
+                    qrbox: { width: 250, height: 150 }, // Área de foco maior
+                    rememberLastUsedCamera: true,
+                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+                    formatsToSupport: [
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8,
+                        Html5QrcodeSupportedFormats.UPC_A,
+                        Html5QrcodeSupportedFormats.UPC_E,
+                        Html5QrcodeSupportedFormats.CODE_128
+                    ]
+                };
+
+                // Inicializar scanner
+                scanner = new Html5Qrcode("qr-reader");
+                
+                // Tentar encontrar a câmera traseira primeiro
+                let cameraId = currentCameraId;
+                if (!cameraId && cameras.length > 0) {
+                    const rearCamera = cameras.find(cam => 
+                        cam.label.toLowerCase().includes('back') || 
+                        cam.label.toLowerCase().includes('rear') ||
+                        cam.label.toLowerCase().includes('environment')
+                    );
+                    cameraId = rearCamera ? rearCamera.deviceId : cameras[0].deviceId;
+                }
+
+                // Iniciar leitura
+                await scanner.start(
+                    cameraId || { facingMode: "environment" },
+                    config,
+                    onScanSuccess,
+                    onScanError
+                );
+                
+                document.getElementById('scanner-container').style.display = 'block';
+                status.textContent = 'Aponte para o código de barras...';
+                
+            } catch (error) {
+                console.error('Erro ao iniciar scanner:', error);
+                document.getElementById('status').textContent = 'Erro: ' + error.message;
+                stopScanner();
+            }
+        }
+
+        // Sucesso na leitura
+        function onScanSuccess(decodedText, decodedResult) {
+            const now = Date.now();
+            const code = decodedText.trim();
+            
+            // Verificar se é um código válido (EAN-13 tem 13 dígitos)
+            if (code.length !== 13 || !/^\d+$/.test(code)) {
+                console.log('Código inválido:', code);
+                return;
+            }
+            
+            // Prevenir leituras duplicadas rápidas
+            if (code === lastScannedCode && (now - lastScanTime) < 2000) {
+                return;
+            }
+            
+            lastScannedCode = code;
+            lastScanTime = now;
+            
+            // Feedback visual
+            const status = document.getElementById('status');
+            status.textContent = `✅ Código detectado: ${code}`;
+            
+            // Parar scanner temporariamente
+            if (scanner) {
+                scanner.pause();
+            }
+            
+            // Buscar produto
+            searchProduct(code);
+            
+            // Reiniciar scanner após 3 segundos
+            setTimeout(() => {
+                if (scanner && scanner.getState() === Html5QrcodeScannerState.PAUSED) {
+                    scanner.resume();
+                    status.textContent = 'Pronto para escanear novamente...';
+                }
+            }, 3000);
+        }
+
+        // Erro na leitura
+        function onScanError(error) {
+            // Ignorar erros comuns de "nenhum código encontrado"
+            if (!error.message.includes("No MultiFormat Readers")) {
+                console.log('Erro de scan:', error);
+            }
+        }
+
+        // Buscar produto na API
+        async function searchProduct(code) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div class="status scanning">
+                    🔍 Buscando informações para o código: ${code}
+                </div>
+            `;
+            resultDiv.classList.add('active');
+            
+            try {
+                // Usar proxy para evitar CORS
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
+                
+                const response = await fetch(proxyUrl + encodeURIComponent(apiUrl), {
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'ScannerApp/1.0'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status !== 1 || !data.product) {
+                    showProductNotFound(code);
+                    return;
+                }
+                
+                showProductInfo(data.product, code);
+                
+            } catch (error) {
+                console.error('Erro ao buscar produto:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Erro ao conectar com a API<br>
+                        <small>${error.message}</small>
+                        <br><br>
+                        <button class="btn" onclick="searchProduct('${code}')" style="padding: 8px; font-size: 14px;">
+                            🔄 Tentar Novamente
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Mostrar informações do produto
+        function showProductInfo(product, code) {
+            const resultDiv = document.getElementById('result');
+            
+            let imageHtml = '';
+            if (product.image_front_url || product.image_url) {
+                const imgUrl = product.image_front_url || product.image_url;
+                imageHtml = `<img src="${imgUrl}" class="product-image" alt="${product.product_name || 'Produto'}">`;
+            }
+            
+            resultDiv.innerHTML = `
+                ${imageHtml}
+                <div class="product-info">
+                    <div class="info-row">
+                        <span class="info-label">Código:</span>
+                        <span class="info-value">${code}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Produto:</span>
+                        <span class="info-value">${product.product_name || product.product_name_pt || product.product_name_en || 'Não informado'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Marca:</span>
+                        <span class="info-value">${product.brands || product.brand_owner || 'Não informada'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Quantidade:</span>
+                        <span class="info-value">${product.quantity || product.product_quantity || 'Não informada'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Categorias:</span>
+                        <span class="info-value">${product.categories || 'Não informado'}</span>
+                    </div>
+                    ${product.nutriscore_grade ? `
+                    <div class="info-row">
+                        <span class="info-label">Nutri-Score:</span>
+                        <span class="info-value" style="font-weight: bold; color: ${getNutriScoreColor(product.nutriscore_grade)}">
+                            ${product.nutriscore_grade.toUpperCase()}
+                        </span>
+                    </div>` : ''}
+                </div>
+            `;
+        }
+
+        // Mostrar produto não encontrado
+        function showProductNotFound(code) {
+            const resultDiv = document.getElementById('result');
+            
+            // Gerar sugestões de códigos similares
+            const suggestions = TEST_CODES
+                .filter(testCode => testCode.substring(0, 3) === code.substring(0, 3))
+                .slice(0, 3);
+            
+            let suggestionsHtml = '';
+            if (suggestions.length > 0) {
+                suggestionsHtml = `
+                    <br><br>
+                    <strong>Tente estes códigos de teste:</strong><br>
+                    ${suggestions.map(code => `<code>${code}</code>`).join(', ')}
+                `;
+            }
+            
+            resultDiv.innerHTML = `
+                <div class="error">
+                    ❌ Produto não encontrado<br>
+                    <small>Código: ${code}</small>
+                    ${suggestionsHtml}
+                </div>
+            `;
+        }
+
+        // Buscar manualmente
+        function searchManual() {
+            const code = document.getElementById('manual-code').value.trim();
+            if (!code || code.length !== 13) {
+                alert('Digite um código EAN-13 válido (13 dígitos)');
+                return;
+            }
+            searchProduct(code);
+        }
+
+        // Parar scanner
+        async function stopScanner() {
+            if (scanner) {
+                try {
+                    await scanner.stop();
+                } catch (error) {
+                    console.error('Erro ao parar scanner:', error);
+                }
+                scanner = null;
+            }
+            
+            document.getElementById('scanner-container').style.display = 'none';
+            document.getElementById('start-scanner').classList.remove('hidden');
+            document.getElementById('camera-selector').classList.add('hidden');
+            document.getElementById('scanner-controls').classList.add('hidden');
+            document.getElementById('status').textContent = 'Scanner parado';
+            document.getElementById('status').classList.remove('scanning');
+            
+            // Desligar lanterna se estiver ligada
+            if (isTorchOn) {
+                toggleTorch();
+            }
+        }
+
+        // Alternar câmera
+        async function switchCamera() {
+            if (!scanner || cameras.length < 2) {
+                alert('Apenas uma câmera disponível');
+                return;
+            }
+            
+            await stopScanner();
+            
+            // Encontrar próxima câmera
+            const currentIndex = cameras.findIndex(cam => cam.deviceId === currentCameraId);
+            const nextIndex = (currentIndex + 1) % cameras.length;
+            currentCameraId = cameras[nextIndex].deviceId;
+            
+            // Reiniciar scanner com nova câmera
+            setTimeout(startScanner, 500);
+        }
+
+        // Alternar lanterna
+        async function toggleTorch() {
+            if (!scanner || !scanner.getRunningTrackCapabilities) {
+                return;
+            }
+            
+            try {
+                const track = await scanner.getRunningTrack();
+                if (track && track.getCapabilities && track.getCapabilities().torch) {
+                    await track.applyConstraints({
+                        advanced: [{ torch: !isTorchOn }]
+                    });
+                    isTorchOn = !isTorchOn;
+                    document.getElementById('torch-btn').textContent = isTorchOn ? '💡' : '🔦';
+                }
+            } catch (error) {
+                console.error('Erro ao controlar lanterna:', error);
+            }
+        }
+
+        // Cor para Nutri-Score
+        function getNutriScoreColor(grade) {
+            const colors = {
+                'a': '#4caf50', // Verde
+                'b': '#8bc34a', // Verde claro
+                'c': '#ffeb3b', // Amarelo
+                'd': '#ff9800', // Laranja
+                'e': '#f44336'  // Vermelho
+            };
+            return colors[grade.toLowerCase()] || '#666';
+        }
+
+        // Permitir selecionar câmera manualmente
+        document.getElementById('camera-select').addEventListener('change', function(e) {
+            if (e.target.value) {
+                currentCameraId = e.target.value;
+                if (scanner) {
+                    switchCamera();
+                }
+            }
+        });
+
+        // Permitir Enter no campo manual
+        document.getElementById('manual-code').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchManual();
+            }
+        });
+    </script>
 </body>
 </html>
