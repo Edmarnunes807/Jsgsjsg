@@ -72,6 +72,7 @@
         .btn-success { background: #10b981; }
         .btn-warning { background: #f59e0b; }
         .btn-danger { background: #ef4444; }
+        .btn-info { background: #3b82f6; }
         .scanner-container {
             position: relative;
             border-radius: 12px;
@@ -259,20 +260,56 @@
             background: #f8fafc;
             border-radius: 10px;
         }
-        .edit-form input {
+        .edit-form input, .edit-form textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
             border: 1px solid #d1d5db;
             border-radius: 6px;
+            font-family: inherit;
+        }
+        .search-sources {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        .search-sources .btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px;
+            font-size: 14px;
+        }
+        .tab-container {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            border-bottom-color: #4f46e5;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 Scanner + Banco Local</h1>
-            <p>EAN → Google Sheets API (Sem CORS)</p>
+            <h1>🔍 Scanner Inteligente</h1>
+            <p>EAN → Banco Local + APIs Externas</p>
         </div>
         <div class="content">
             <div class="input-group">
@@ -298,19 +335,26 @@
             
             <div class="status" id="status">Pronto para escanear</div>
             
+            <div class="tab-container">
+                <div class="tab active" onclick="switchTab('local')">Banco Local</div>
+                <div class="tab" onclick="switchTab('external')">APIs Externas</div>
+            </div>
+            
             <div class="result" id="result"></div>
         </div>
     </div>
 
     <script>
         // ========== CONFIGURAÇÕES ==========
-        const GOOGLE_SHEETS_API = "https://script.google.com/macros/s/AKfycbzgcibH369NS25K6afIYWfspNev0OcaXkRl2C2_HsmNGvdMTTK0OO4cn0VqmaC70GLGfg/exec"; // ← SUA URL DO APPS SCRIPT
+        const GOOGLE_SHEETS_API = "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI"; // ← COLE SUA URL AQUI
+        const BLUESOFT_API_KEY = "7tF33vAL9xZs7ZRoSMBitg"; // Sua chave Bluesoft
         
         let html5QrCode = null;
         let currentCameraId = null;
         let isScanning = false;
         let lastScanned = '';
         let lastScanTime = 0;
+        let currentTab = 'local';
         
         const REAR_CAMERA_KEYWORDS = ["back", "rear", "environment", "traseira", "camera 0"];
 
@@ -501,8 +545,37 @@
             }
         }
 
-        // ========== BUSCA NO GOOGLE SHEETS (NOVA API - APENAS GET) ==========
+        // ========== TAB SYSTEM ==========
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update search based on current tab
+            const lastCode = document.getElementById('manualCode').value;
+            if (lastCode && lastCode.length >= 8) {
+                searchProduct(lastCode);
+            }
+        }
+
+        // ========== BUSCA PRINCIPAL ==========
         async function searchProduct(code) {
+            const resultDiv = document.getElementById('result');
+            const status = document.getElementById('status');
+            
+            if (currentTab === 'local') {
+                await searchLocalDatabase(code);
+            } else {
+                await searchExternalAPIs(code);
+            }
+        }
+
+        // ========== BANCO LOCAL (GOOGLE SHEETS) ==========
+        async function searchLocalDatabase(code) {
             const resultDiv = document.getElementById('result');
             const status = document.getElementById('status');
             
@@ -513,7 +586,6 @@
             resultDiv.classList.add('active');
             
             try {
-                // 1. Buscar no Google Sheets (Banco Local)
                 const localResult = await searchInGoogleSheets(code);
                 
                 if (localResult && localResult.success && localResult.found) {
@@ -523,15 +595,15 @@
                     return;
                 }
                 
-                // 2. Não encontrado localmente
+                // Não encontrado localmente
                 status.textContent = '❌ Não encontrado no banco local';
                 status.className = 'status error';
                 
                 showAddToDatabaseForm(code);
                 
             } catch (error) {
-                console.error('Erro na busca:', error);
-                status.textContent = '❌ Erro ao consultar banco de dados';
+                console.error('Erro na busca local:', error);
+                status.textContent = '❌ Erro ao consultar banco local';
                 status.className = 'status error';
                 
                 resultDiv.innerHTML = `
@@ -539,10 +611,10 @@
                         <div class="no-results-icon">⚠️</div>
                         <h3 style="color: #6b7280; margin-bottom: 10px;">Erro de conexão</h3>
                         <p style="color: #9ca3af; font-size: 14px;">
-                            Não foi possível acessar o banco de dados.<br>
-                            Verifique a conexão e tente novamente.
+                            Não foi possível acessar o banco local.<br>
+                            Verifique a URL da API.
                         </p>
-                        <button class="btn" onclick="searchProduct('${code}')" style="margin-top: 20px;">
+                        <button class="btn" onclick="searchLocalDatabase('${code}')" style="margin-top: 20px;">
                             🔄 Tentar novamente
                         </button>
                     </div>
@@ -551,10 +623,13 @@
         }
 
         async function searchInGoogleSheets(ean) {
+            if (!GOOGLE_SHEETS_API || GOOGLE_SHEETS_API.includes("https://script.google.com/macros/s/AKfycbzgcibH369NS25K6afIYWfspNev0OcaXkRl2C2_HsmNGvdMTTK0OO4cn0VqmaC70GLGfg/exec")) {
+                console.warn("⚠️ Configure a URL do Google Sheets API primeiro!");
+                return null;
+            }
+            
             try {
-                // API NOVA: APENAS GET
                 const url = `${GOOGLE_SHEETS_API}?operation=search&ean=${encodeURIComponent(ean)}`;
-                
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -570,7 +645,6 @@
 
         async function saveToGoogleSheets(productData) {
             try {
-                // API NOVA: APENAS GET - Enviar dados como parâmetros na URL
                 const params = new URLSearchParams({
                     operation: 'save',
                     ean: productData.ean,
@@ -582,7 +656,6 @@
                 });
                 
                 const url = `${GOOGLE_SHEETS_API}?${params.toString()}`;
-                
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -598,7 +671,6 @@
 
         async function updateInGoogleSheets(productData) {
             try {
-                // API NOVA: APENAS GET
                 const params = new URLSearchParams({
                     operation: 'update',
                     ean: productData.ean,
@@ -606,7 +678,7 @@
                     marca: productData.marca || '',
                     imagem: productData.imagem || '',
                     preco: productData.preco || '',
-                    fonte: productData.fonte || 'Manual'
+                    fonte: productData.fonte || 'Editado'
                 });
                 
                 if (productData.linha) {
@@ -614,7 +686,6 @@
                 }
                 
                 const url = `${GOOGLE_SHEETS_API}?${params.toString()}`;
-                
                 const response = await fetch(url);
                 return await response.json();
             } catch (error) {
@@ -625,7 +696,6 @@
 
         async function deleteFromGoogleSheets(ean, linha) {
             try {
-                // API NOVA: APENAS GET
                 const params = new URLSearchParams({
                     operation: 'delete',
                     ean: ean
@@ -636,13 +706,133 @@
                 }
                 
                 const url = `${GOOGLE_SHEETS_API}?${params.toString()}`;
-                
                 const response = await fetch(url);
                 return await response.json();
             } catch (error) {
                 console.error('Erro ao excluir:', error);
                 return { success: false, error: error.message };
             }
+        }
+
+        // ========== APIS EXTERNAS ==========
+        async function searchExternalAPIs(code) {
+            const resultDiv = document.getElementById('result');
+            const status = document.getElementById('status');
+            
+            status.innerHTML = `<div class="loading"></div> Buscando em APIs externas...`;
+            status.className = 'status scanning';
+            
+            resultDiv.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div class="loading" style="margin: 0 auto 15px;"></div>
+                    <p>Consultando múltiplas fontes...</p>
+                </div>
+            `;
+            resultDiv.classList.add('active');
+            
+            const apis = [
+                { name: "Open Food Facts", func: searchOpenFoodFacts },
+                { name: "EAN Search", func: searchEanSearch },
+                { name: "Bluesoft Cosmos", func: searchBluesoftCosmos }
+            ];
+            
+            let foundProduct = null;
+            let foundSource = '';
+            
+            for (const api of apis) {
+                try {
+                    status.innerHTML = `<div class="loading"></div> Consultando ${api.name}...`;
+                    
+                    const product = await api.func(code);
+                    if (product && product.name) {
+                        foundProduct = product;
+                        foundSource = api.name;
+                        break;
+                    }
+                } catch (error) {
+                    console.log(`API ${api.name} falhou:`, error);
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
+            if (foundProduct) {
+                showExternalProductInfo(foundProduct, code, foundSource);
+                status.textContent = `✅ Encontrado em: ${foundSource}`;
+                status.className = 'status success';
+            } else {
+                showNoExternalResults(code);
+                status.textContent = '❌ Não encontrado em APIs externas';
+                status.className = 'status error';
+            }
+        }
+
+        async function searchOpenFoodFacts(code) {
+            try {
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
+                
+                const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
+                if (!response.ok) return null;
+                
+                const data = await response.json();
+                if (data.status === 1 && data.product) {
+                    return {
+                        name: data.product.product_name || 
+                              data.product.product_name_pt || 
+                              data.product.product_name_en || 
+                              'Produto',
+                        brand: data.product.brands || '',
+                        image: data.product.image_front_url || data.product.image_url || null,
+                        price: ''
+                    };
+                }
+                return null;
+            } catch { return null; }
+        }
+
+        async function searchEanSearch(code) {
+            try {
+                const response = await fetch(`https://api.ean-search.org/api?token=demo&op=barcode-lookup&format=json&ean=${code}`);
+                if (!response.ok) return null;
+                
+                const data = await response.json();
+                if (data && data.length > 0 && data[0].name) {
+                    return {
+                        name: data[0].name,
+                        brand: data[0].vendor || data[0].manufacturer || '',
+                        image: null,
+                        price: ''
+                    };
+                }
+                return null;
+            } catch { return null; }
+        }
+
+        async function searchBluesoftCosmos(code) {
+            try {
+                const response = await fetch(
+                    `https://api.cosmos.bluesoft.com.br/gtins/${code}.json`,
+                    {
+                        headers: {
+                            'X-Cosmos-Token': BLUESOFT_API_KEY,
+                            'User-Agent': 'Cosmos-API-Request',
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                
+                if (!response.ok) return null;
+                
+                const data = await response.json();
+                return {
+                    name: data.description || 'Produto',
+                    brand: data.brand?.name || '',
+                    image: data.thumbnail || null,
+                    price: data.price || ''
+                };
+                
+            } catch { return null; }
         }
 
         // ========== MOSTRAR RESULTADOS ==========
@@ -670,8 +860,6 @@
             let sourceBadge = source;
             if (isFromDatabase) {
                 sourceBadge += ' <span class="db-badge">BANCO LOCAL</span>';
-            } else {
-                sourceBadge += ' <span class="db-missing">NÃO SALVO</span>';
             }
             
             resultDiv.innerHTML = `
@@ -723,6 +911,64 @@
             `;
         }
 
+        function showExternalProductInfo(product, code, source) {
+            const resultDiv = document.getElementById('result');
+            
+            let imageHtml = '';
+            if (product.image) {
+                imageHtml = `
+                    <div class="product-image-container">
+                        <img src="${product.image}" 
+                             class="product-image" 
+                             alt="${product.name}"
+                             onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\"padding: 40px; text-align: center; color: #6b7280;\">📷 Sem imagem</div>'">
+                    </div>
+                `;
+            } else {
+                imageHtml = `
+                    <div class="product-image-container" style="color: #6b7280;">
+                        📷 Sem imagem disponível
+                    </div>
+                `;
+            }
+            
+            resultDiv.innerHTML = `
+                <div class="product-card">
+                    ${imageHtml}
+                    
+                    <div class="product-details">
+                        <div class="product-code">📦 EAN: ${code}</div>
+                        
+                        <div class="product-title">${product.name}</div>
+                        
+                        ${product.brand ? `
+                        <div class="product-brand">🏭 ${product.brand}</div>
+                        ` : ''}
+                        
+                        ${product.price ? `
+                        <div style="margin-top: 10px; color: #10b981; font-weight: bold; font-size: 16px;">
+                            💰 ${product.price}
+                        </div>
+                        ` : ''}
+                        
+                        <div class="source-badge">Fonte: ${source} <span class="db-missing">EXTERNA</span></div>
+                    </div>
+                </div>
+                
+                <div class="api-actions">
+                    <button class="btn btn-success" onclick="saveExternalProductToDatabase('${code}', '${encodeURIComponent(product.name)}', '${encodeURIComponent(product.brand || '')}', '${encodeURIComponent(product.image || '')}', '${encodeURIComponent(product.price || '')}', '${source}')">
+                        💾 Salvar no Banco Local
+                    </button>
+                    <button class="btn" onclick="searchOnline('${code}', '${encodeURIComponent(product.name)}')">
+                        🌐 Pesquisar Online
+                    </button>
+                    <button class="btn btn-secondary" onclick="switchTab('local'); searchLocalDatabase('${code}')">
+                        🔍 Verificar no Banco Local
+                    </button>
+                </div>
+            `;
+        }
+
         function showAddToDatabaseForm(code) {
             const resultDiv = document.getElementById('result');
             
@@ -745,10 +991,46 @@
                             <button class="btn btn-success" onclick="saveNewProduct('${code}')">
                                 💾 Salvar no Banco
                             </button>
-                            <button class="btn" onclick="searchOnline('${code}')">
-                                🌐 Pesquisar na Web
+                            <button class="btn btn-info" onclick="switchTab('external'); searchExternalAPIs('${code}')">
+                                🔍 Buscar em APIs Externas
                             </button>
                         </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showNoExternalResults(code) {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = `
+                <div class="no-results">
+                    <div class="no-results-icon">🔍</div>
+                    <h3 style="color: #6b7280; margin-bottom: 10px;">Não encontrado</h3>
+                    <p style="color: #9ca3af; font-size: 14px; margin-bottom: 20px;">
+                        Código: <strong>${code}</strong><br>
+                        Não encontrado nas APIs externas consultadas.
+                    </p>
+                    
+                    <div class="search-sources">
+                        <button class="btn" onclick="searchOpenFoodFactsManual('${code}')">
+                            Open Food Facts
+                        </button>
+                        <button class="btn" onclick="searchEanSearchManual('${code}')">
+                            EAN Search
+                        </button>
+                        <button class="btn" onclick="searchBluesoftManual('${code}')">
+                            Bluesoft
+                        </button>
+                    </div>
+                    
+                    <div class="api-actions" style="margin-top: 20px;">
+                        <button class="btn btn-success" onclick="addManualProduct('${code}')">
+                            ✏️ Cadastrar Manualmente
+                        </button>
+                        <button class="btn" onclick="searchOnline('${code}')">
+                            🌐 Pesquisar na Web
+                        </button>
                     </div>
                 </div>
             `;
@@ -774,7 +1056,7 @@
                         <button class="btn btn-success" onclick="updateProduct('${ean}', '${linha}')">
                             💾 Salvar Alterações
                         </button>
-                        <button class="btn btn-secondary" onclick="searchProduct('${ean}')">
+                        <button class="btn btn-secondary" onclick="searchLocalDatabase('${ean}')">
                             ↩️ Cancelar
                         </button>
                     </div>
@@ -810,10 +1092,38 @@
             const result = await saveToGoogleSheets(productData);
             
             if (result.success) {
-                status.textContent = '✅ Produto salvo com sucesso!';
+                status.textContent = '✅ Produto salvo no banco local!';
                 status.className = 'status success';
-                // Buscar novamente para mostrar o produto salvo
-                setTimeout(() => searchProduct(code), 1000);
+                setTimeout(() => searchLocalDatabase(code), 1000);
+            } else {
+                status.textContent = `❌ Erro ao salvar: ${result.error || result.message}`;
+                status.className = 'status error';
+            }
+        }
+
+        async function saveExternalProductToDatabase(code, name, brand, image, price, source) {
+            const productData = {
+                ean: code,
+                nome: decodeURIComponent(name),
+                marca: decodeURIComponent(brand),
+                imagem: decodeURIComponent(image),
+                preco: decodeURIComponent(price),
+                fonte: source
+            };
+            
+            const status = document.getElementById('status');
+            status.innerHTML = '<div class="loading"></div> Salvando no banco local...';
+            status.className = 'status scanning';
+            
+            const result = await saveToGoogleSheets(productData);
+            
+            if (result.success) {
+                status.textContent = '✅ Produto salvo no banco local!';
+                status.className = 'status success';
+                setTimeout(() => {
+                    switchTab('local');
+                    searchLocalDatabase(code);
+                }, 1000);
             } else {
                 status.textContent = `❌ Erro ao salvar: ${result.error || result.message}`;
                 status.className = 'status error';
@@ -850,7 +1160,7 @@
             if (result.success) {
                 status.textContent = '✅ Produto atualizado com sucesso!';
                 status.className = 'status success';
-                setTimeout(() => searchProduct(ean), 1000);
+                setTimeout(() => searchLocalDatabase(ean), 1000);
             } else {
                 status.textContent = `❌ Erro ao atualizar: ${result.error || result.message}`;
                 status.className = 'status error';
@@ -869,7 +1179,7 @@
             const result = await deleteFromGoogleSheets(ean, linha);
             
             if (result.success) {
-                status.textContent = '✅ Produto excluído com sucesso!';
+                status.textContent = '✅ Produto excluído do banco local!';
                 status.className = 'status success';
                 
                 const resultDiv = document.getElementById('result');
@@ -879,7 +1189,7 @@
                         <h3 style="color: #6b7280; margin-bottom: 10px;">Produto excluído</h3>
                         <p style="color: #9ca3af; font-size: 14px;">
                             Código: <strong>${ean}</strong><br>
-                            O produto foi removido do banco de dados.
+                            O produto foi removido do banco local.
                         </p>
                     </div>
                 `;
@@ -902,6 +1212,71 @@
                 return;
             }
             searchProduct(code);
+        }
+
+        async function searchOpenFoodFactsManual(code) {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="loading"></div> Consultando Open Food Facts...`;
+            
+            const product = await searchOpenFoodFacts(code);
+            if (product) {
+                showExternalProductInfo(product, code, 'Open Food Facts');
+                status.textContent = '✅ Encontrado no Open Food Facts';
+                status.className = 'status success';
+            } else {
+                status.textContent = '❌ Não encontrado no Open Food Facts';
+                status.className = 'status error';
+            }
+        }
+
+        async function searchEanSearchManual(code) {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="loading"></div> Consultando EAN Search...`;
+            
+            const product = await searchEanSearch(code);
+            if (product) {
+                showExternalProductInfo(product, code, 'EAN Search');
+                status.textContent = '✅ Encontrado no EAN Search';
+                status.className = 'status success';
+            } else {
+                status.textContent = '❌ Não encontrado no EAN Search';
+                status.className = 'status error';
+            }
+        }
+
+        async function searchBluesoftManual(code) {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="loading"></div> Consultando Bluesoft Cosmos...`;
+            
+            const product = await searchBluesoftCosmos(code);
+            if (product) {
+                showExternalProductInfo(product, code, 'Bluesoft Cosmos');
+                status.textContent = '✅ Encontrado no Bluesoft Cosmos';
+                status.className = 'status success';
+            } else {
+                status.textContent = '❌ Não encontrado no Bluesoft Cosmos';
+                status.className = 'status error';
+            }
+        }
+
+        function addManualProduct(code) {
+            const name = prompt('Digite o nome do produto:', '');
+            if (name) {
+                const brand = prompt('Digite a marca (opcional):', '');
+                const image = prompt('Digite a URL da imagem (opcional):', '');
+                const price = prompt('Digite o preço (opcional):', '');
+                
+                const productData = {
+                    ean: code,
+                    nome: name,
+                    marca: brand || '',
+                    imagem: image || '',
+                    preco: price || '',
+                    fonte: 'Manual'
+                };
+                
+                saveExternalProductToDatabase(code, name, brand || '', image || '', price || '', 'Manual');
+            }
         }
 
         // ========== FUNÇÕES DO SCANNER ==========
@@ -980,9 +1355,15 @@
             if (e.key === 'Enter') searchManual();
         });
 
-        // Verificar configuração da API
+        // Verificação da URL da API
         if (GOOGLE_SHEETS_API.includes("SUA_URL_DO_GOOGLE_APPS_SCRIPT")) {
-            console.warn("⚠️ Configure a URL do Google Sheets API na linha 84");
+            console.warn("⚠️ Configure a URL do Google Sheets API na linha 85");
+            document.getElementById('status').innerHTML = `
+                <div style="color: #dc2626; text-align: center;">
+                    ⚠️ Configure a URL da API do Google Sheets<br>
+                    <small>Linha 85 do código</small>
+                </div>
+            `;
         }
     </script>
 </body>
