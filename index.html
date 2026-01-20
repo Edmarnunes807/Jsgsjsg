@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner de Códigos de Barras</title>
+    <title>Scanner Automático de Códigos</title>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * {
@@ -14,111 +14,46 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #1a1a1a;
+            color: white;
             min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            width: 100%;
-            max-width: 500px;
-            overflow: hidden;
+            padding: 10px;
         }
 
         .header {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
-            padding: 25px;
             text-align: center;
+            margin: 10px 0 20px;
+            width: 100%;
+            max-width: 500px;
         }
 
         .header h1 {
             font-size: 24px;
+            color: #4CAF50;
             margin-bottom: 5px;
         }
 
         .header p {
-            opacity: 0.9;
+            color: #ccc;
             font-size: 14px;
-        }
-
-        .content {
-            padding: 25px;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 16px;
-            margin-bottom: 10px;
-            transition: border-color 0.3s;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: #4f46e5;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
-        }
-
-        .btn-secondary {
-            background: #6b7280;
-        }
-
-        .btn-danger {
-            background: #ef4444;
-        }
-
-        .btn-success {
-            background: #10b981;
         }
 
         .scanner-container {
             position: relative;
-            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 15px;
             overflow: hidden;
-            margin: 20px 0;
             background: #000;
-            min-height: 300px;
-            display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
         }
 
         #reader {
             width: 100% !important;
-            min-height: 300px;
         }
 
         .scanner-overlay {
@@ -129,19 +64,19 @@
             height: 100%;
             pointer-events: none;
             z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         .focus-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             width: 80%;
-            height: 120px;
-            border: 4px solid #00ff00;
+            height: 150px;
+            border: 3px solid #4CAF50;
             border-radius: 10px;
-            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5),
-                        0 0 20px rgba(0, 255, 0, 0.5);
-            position: relative;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.6),
+                        0 0 20px rgba(76, 175, 80, 0.5);
         }
 
         .scan-line {
@@ -152,9 +87,9 @@
             height: 3px;
             background: linear-gradient(90deg, 
                 transparent 0%, 
-                #00ff00 50%, 
+                #4CAF50 50%, 
                 transparent 100%);
-            animation: scan 2s ease-in-out infinite;
+            animation: scan 1.5s ease-in-out infinite;
         }
 
         @keyframes scan {
@@ -162,31 +97,83 @@
             50% { top: 100%; }
         }
 
-        .status {
-            text-align: center;
+        .controls {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            flex: 1;
             padding: 15px;
-            background: #f3f4f6;
+            border: none;
             border-radius: 10px;
-            margin: 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-start {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn-stop {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-stop:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
+        }
+
+        .status {
+            width: 100%;
+            max-width: 500px;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
             font-size: 14px;
-            color: #4b5563;
+            border-left: 4px solid #4CAF50;
         }
 
         .status.scanning {
-            background: #d1fae5;
-            color: #065f46;
+            border-left-color: #4CAF50;
+            background: #1b5e20;
+        }
+
+        .status.detected {
+            border-left-color: #2196F3;
+            background: #0d47a1;
         }
 
         .status.error {
-            background: #fee2e2;
-            color: #dc2626;
+            border-left-color: #f44336;
+            background: #b71c1c;
         }
 
         .result {
-            background: #f9fafb;
-            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            background: #2a2a2a;
+            border-radius: 10px;
             padding: 20px;
-            margin-top: 20px;
+            margin-bottom: 20px;
             display: none;
         }
 
@@ -207,8 +194,8 @@
         .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 8px 0;
+            border-bottom: 1px solid #444;
         }
 
         .info-row:last-child {
@@ -216,74 +203,61 @@
         }
 
         .info-label {
-            font-weight: 600;
-            color: #4b5563;
+            color: #aaa;
+            font-weight: 500;
         }
 
         .info-value {
-            color: #111827;
+            color: white;
             text-align: right;
             max-width: 60%;
+            font-weight: 500;
         }
 
         .product-image {
             width: 100%;
-            max-height: 200px;
+            max-height: 180px;
             object-fit: contain;
             border-radius: 8px;
             margin-bottom: 15px;
-        }
-
-        .camera-controls {
-            display: flex;
-            gap: 10px;
-            margin: 10px 0;
-        }
-
-        .camera-controls select {
-            flex: 1;
+            background: #1a1a1a;
             padding: 10px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 14px;
         }
 
-        .torch-control {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            z-index: 20;
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #4CAF50;
         }
 
-        .torch-btn {
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            border: none;
+        .loading-spinner {
+            border: 3px solid #333;
+            border-top: 3px solid #4CAF50;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
         }
 
-        .hidden {
-            display: none;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .test-codes {
-            margin-top: 15px;
-            padding: 15px;
-            background: #e0f2fe;
+        .last-scanned {
+            width: 100%;
+            max-width: 500px;
+            background: #2a2a2a;
             border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
         }
 
-        .test-codes h3 {
-            font-size: 14px;
+        .last-scanned h3 {
+            color: #4CAF50;
             margin-bottom: 10px;
-            color: #0369a1;
+            font-size: 16px;
         }
 
         .code-list {
@@ -293,459 +267,335 @@
         }
 
         .code-badge {
-            background: white;
+            background: #1a1a1a;
+            color: #4CAF50;
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 12px;
             cursor: pointer;
-            border: 1px solid #bae6fd;
+            border: 1px solid #4CAF50;
             transition: all 0.2s;
         }
 
         .code-badge:hover {
-            background: #0ea5e9;
+            background: #4CAF50;
             color: white;
-            transform: translateY(-2px);
+        }
+
+        .counter {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.7);
+            color: #4CAF50;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            z-index: 20;
+        }
+
+        .torch-btn {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .torch-btn:hover {
+            background: rgba(76, 175, 80, 0.7);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📦 Scanner de Produtos</h1>
-            <p>Escaneie qualquer código de barras EAN-13</p>
-        </div>
+    <div class="header">
+        <h1>🔍 Scanner Automático</h1>
+        <p>Aponte para qualquer código de barras - a leitura é automática!</p>
+    </div>
 
-        <div class="content">
-            <!-- Entrada manual -->
-            <div class="input-group">
-                <input type="text" 
-                       id="manualCode" 
-                       placeholder="Digite o código de barras (13 dígitos)"
-                       maxlength="13"
-                       value="7891000315507">
-                <button class="btn" onclick="searchManual()">
-                    🔍 Buscar Produto Manualmente
-                </button>
-            </div>
-
-            <!-- Botão do scanner -->
-            <button class="btn" id="startBtn" onclick="initScanner()">
-                📷 Abrir Scanner de Câmera
-            </button>
-
-            <!-- Controles da câmera -->
-            <div class="camera-controls hidden" id="cameraControls">
-                <select id="cameraSelect">
-                    <option value="">Selecionando câmera...</option>
-                </select>
-                <button class="btn btn-secondary" onclick="stopScanner()">
-                    ⏹️ Parar
-                </button>
-            </div>
-
-            <!-- Container do scanner -->
-            <div class="scanner-container" id="scannerContainer">
-                <div id="reader"></div>
-                <div class="scanner-overlay">
-                    <div class="focus-frame">
-                        <div class="scan-line"></div>
-                    </div>
-                </div>
-                <div class="torch-control">
-                    <button class="torch-btn" id="torchBtn" onclick="toggleTorch()">🔦</button>
-                </div>
-            </div>
-
-            <!-- Status -->
-            <div class="status" id="status">
-                Clique em "Abrir Scanner" para começar
-            </div>
-
-            <!-- Controles extras -->
-            <div class="camera-controls hidden" id="extraControls">
-                <button class="btn btn-success" onclick="switchCamera()">
-                    🔄 Alternar Câmera
-                </button>
-                <button class="btn" onclick="testScanner()">
-                    🧪 Testar Scanner
-                </button>
-            </div>
-
-            <!-- Resultado -->
-            <div class="result" id="result"></div>
-
-            <!-- Códigos de teste -->
-            <div class="test-codes">
-                <h3>🎯 Códigos de teste (clique para usar):</h3>
-                <div class="code-list" id="testCodes"></div>
+    <div class="scanner-container">
+        <div id="reader"></div>
+        <div class="scanner-overlay">
+            <div class="focus-frame">
+                <div class="scan-line"></div>
             </div>
         </div>
+        <div class="counter" id="counter">0 códigos</div>
+        <button class="torch-btn" id="torchBtn" onclick="toggleTorch()">🔦</button>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-start" id="startBtn" onclick="startScanner()">
+            ▶️ Iniciar Scanner
+        </button>
+        <button class="btn btn-stop" id="stopBtn" onclick="stopScanner()" style="display: none;">
+            ⏹️ Parar Scanner
+        </button>
+    </div>
+
+    <div class="status" id="status">
+        Clique em "Iniciar Scanner" para começar
+    </div>
+
+    <div class="result" id="result">
+        <!-- Resultados aparecem aqui -->
+    </div>
+
+    <div class="last-scanned" id="lastScanned" style="display: none;">
+        <h3>📋 Últimos Códigos Lidos:</h3>
+        <div class="code-list" id="codeList"></div>
     </div>
 
     <script>
         // Variáveis globais
         let html5QrCode = null;
-        let currentCameraId = null;
-        let cameras = [];
         let isScanning = false;
-        let lastScanned = '';
-        let lastScanTime = 0;
+        let scanCount = 0;
+        let scannedCodes = [];
+        let lastDetectedCode = '';
+        let detectionCooldown = false;
+        
+        // Cache de produtos para evitar buscas repetidas
+        let productCache = {};
 
-        // Códigos de teste reais
-        const TEST_CODES = [
-            '7891000315507', // Nescau
-            '7894900010015', // Coca-Cola
-            '7891910000197', // Arroz Tio João
-            '7892840816841', // Leite Ninho
-            '7896051111027', // Óleo Soja
-            '7891150002658', // Café Pilão
-            '7891999010026', // Feijão Carioca
-            '7894650050011', // Sabão OMO
-            '7891024115109', // Fralda Pampers
-            '7896036090015'  // Pão Pullman
-        ];
-
-        // Inicializar a página
-        document.addEventListener('DOMContentLoaded', function() {
-            loadTestCodes();
-            loadCameras();
-        });
-
-        // Carregar códigos de teste
-        function loadTestCodes() {
-            const container = document.getElementById('testCodes');
-            TEST_CODES.forEach(code => {
-                const badge = document.createElement('div');
-                badge.className = 'code-badge';
-                badge.textContent = code;
-                badge.onclick = () => {
-                    document.getElementById('manualCode').value = code;
-                    searchManual();
-                };
-                container.appendChild(badge);
-            });
-        }
-
-        // Carregar câmeras disponíveis
-        async function loadCameras() {
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                cameras = devices.filter(device => device.kind === 'videoinput');
-                
-                const select = document.getElementById('cameraSelect');
-                select.innerHTML = '<option value="">Selecione uma câmera...</option>';
-                
-                cameras.forEach((camera, index) => {
-                    const label = camera.label || `Câmera ${index + 1}`;
-                    const option = document.createElement('option');
-                    option.value = camera.deviceId;
-                    option.textContent = label;
-                    select.appendChild(option);
-                });
-            } catch (error) {
-                console.log('Erro ao carregar câmeras:', error);
-            }
-        }
-
-        // Inicializar o scanner
-        async function initScanner() {
+        // Iniciar scanner (SOMENTE câmera traseira)
+        async function startScanner() {
             if (isScanning) return;
             
             try {
                 const status = document.getElementById('status');
-                status.textContent = 'Solicitando acesso à câmera...';
+                status.textContent = '🔄 Ativando câmera traseira...';
                 status.className = 'status scanning';
                 
-                // Esconder botão inicial e mostrar controles
-                document.getElementById('startBtn').classList.add('hidden');
-                document.getElementById('cameraControls').classList.remove('hidden');
-                document.getElementById('extraControls').classList.remove('hidden');
+                // Mostrar botão de parar, esconder botão de iniciar
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('stopBtn').style.display = 'flex';
                 
-                // Configurações do scanner
+                // Mostrar histórico
+                document.getElementById('lastScanned').style.display = 'block';
+                
+                // Configuração do scanner
                 const config = {
-                    fps: 10,
+                    fps: 30, // Alta taxa de quadros para detecção rápida
                     qrbox: { 
-                        width: 250, 
-                        height: 150 
+                        width: 280, 
+                        height: 160 // Área maior para melhor detecção
                     },
                     rememberLastUsedCamera: true,
-                    supportedScanTypes: [
-                        Html5QrcodeScanType.SCAN_TYPE_CAMERA
-                    ],
+                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
                         Html5QrcodeSupportedFormats.EAN_8,
                         Html5QrcodeSupportedFormats.UPC_A,
                         Html5QrcodeSupportedFormats.UPC_E,
                         Html5QrcodeSupportedFormats.CODE_128,
-                        Html5QrcodeSupportedFormats.CODE_39
+                        Html5QrcodeSupportedFormats.CODE_39,
+                        Html5QrcodeSupportedFormats.CODE_93
                     ]
                 };
                 
                 // Criar instância do scanner
                 html5QrCode = new Html5Qrcode("reader");
                 
-                // Tentar usar câmera traseira primeiro
-                let cameraId = currentCameraId;
-                if (!cameraId && cameras.length > 0) {
-                    const rearCamera = cameras.find(cam => 
-                        cam.label.includes('back') || 
-                        cam.label.includes('rear') ||
-                        cam.label.includes('environment')
-                    );
-                    cameraId = rearCamera ? rearCamera.deviceId : cameras[0].deviceId;
-                    currentCameraId = cameraId;
-                }
+                // FORÇAR câmera traseira
+                const cameraConfig = { facingMode: "environment" };
                 
-                // Iniciar o scanner
+                // Iniciar scanner
                 await html5QrCode.start(
-                    cameraId || { facingMode: "environment" },
+                    cameraConfig,
                     config,
                     onScanSuccess,
                     onScanError
                 );
                 
-                // Mostrar container do scanner
-                document.getElementById('scannerContainer').style.display = 'block';
-                status.textContent = 'Scanner ativo! Aponte para um código de barras...';
                 isScanning = true;
-                
-                // Atualizar seletor de câmera
-                if (currentCameraId) {
-                    document.getElementById('cameraSelect').value = currentCameraId;
-                }
-                
-                // Configurar evento de mudança de câmera
-                document.getElementById('cameraSelect').onchange = function() {
-                    if (this.value) {
-                        switchToCamera(this.value);
-                    }
-                };
+                status.textContent = '✅ Scanner ativo! Aponte para um código de barras...';
                 
             } catch (error) {
                 console.error('Erro ao iniciar scanner:', error);
                 document.getElementById('status').className = 'status error';
-                document.getElementById('status').textContent = `Erro: ${error.message}`;
+                document.getElementById('status').textContent = `❌ Erro: ${error.message}`;
                 stopScanner();
             }
         }
 
-        // Sucesso na leitura
+        // Sucesso na detecção - LEITURA CONTÍNUA
         function onScanSuccess(decodedText, decodedResult) {
-            const now = Date.now();
             const code = decodedText.trim();
+            const now = Date.now();
             
-            // Verificar se é um código válido (EAN-13 tem 13 dígitos)
+            // Ignorar se não for um código válido
             if (!isValidBarcode(code)) {
-                console.log('Código inválido ignorado:', code);
                 return;
             }
             
-            // Prevenir leituras duplicadas rápidas
-            if (code === lastScanned && (now - lastScanTime) < 2000) {
+            // Cooldown para evitar detecções múltiplas do mesmo código
+            if (detectionCooldown && code === lastDetectedCode) {
                 return;
             }
             
-            lastScanned = code;
-            lastScanTime = now;
+            // Atualizar último código detectado
+            lastDetectedCode = code;
             
-            // Feedback visual
-            const status = document.getElementById('status');
-            status.textContent = `✅ Código detectado: ${code}`;
-            
-            // Pausar scanner temporariamente
-            if (html5QrCode) {
-                html5QrCode.pause();
-            }
-            
-            // Buscar produto
-            searchProduct(code);
-            
-            // Reiniciar scanner após 3 segundos
+            // Ativar cooldown de 500ms para o mesmo código
+            detectionCooldown = true;
             setTimeout(() => {
-                if (html5QrCode && !isScanning) {
-                    html5QrCode.resume();
-                    status.textContent = 'Pronto para escanear novamente...';
+                detectionCooldown = false;
+            }, 500);
+            
+            // Atualizar contador
+            scanCount++;
+            document.getElementById('counter').textContent = `${scanCount} códigos`;
+            
+            // Adicionar ao histórico (máximo 10)
+            if (!scannedCodes.includes(code)) {
+                scannedCodes.unshift(code);
+                if (scannedCodes.length > 10) {
+                    scannedCodes.pop();
                 }
-            }, 3000);
+                updateCodeList();
+            }
+            
+            // Feedback visual rápido
+            const status = document.getElementById('status');
+            status.className = 'status detected';
+            status.textContent = `✅ Detectado: ${code}`;
+            
+            // Buscar produto (se ainda não estiver no cache)
+            if (!productCache[code]) {
+                searchProduct(code);
+            } else {
+                // Se já está no cache, mostrar imediatamente
+                showCachedProduct(code);
+            }
+            
+            // Feedback visual no scanner
+            const focusFrame = document.querySelector('.focus-frame');
+            focusFrame.style.borderColor = '#2196F3';
+            focusFrame.style.boxShadow = '0 0 0 1000px rgba(0, 0, 0, 0.6), 0 0 30px rgba(33, 150, 243, 0.7)';
+            
+            setTimeout(() => {
+                focusFrame.style.borderColor = '#4CAF50';
+                focusFrame.style.boxShadow = '0 0 0 1000px rgba(0, 0, 0, 0.6), 0 0 20px rgba(76, 175, 80, 0.5)';
+            }, 300);
         }
 
-        // Erro na leitura
+        // Erro na leitura (ignorar erros comuns)
         function onScanError(error) {
-            // Ignorar erros de "nenhum código encontrado"
+            // Apenas logar erros não comuns
             if (!error.includes("No MultiFormat Readers")) {
-                console.log('Erro de scan:', error);
+                console.log('Scan error:', error);
             }
         }
 
         // Validar código de barras
         function isValidBarcode(code) {
-            // Deve ter entre 8 e 13 dígitos e ser apenas números
-            if (!/^\d+$/.test(code)) return false;
-            if (code.length < 8 || code.length > 13) return false;
-            
-            // Validação básica de dígito verificador para EAN-13
-            if (code.length === 13) {
-                return validateEAN13(code);
-            }
-            
-            return true;
+            // Aceitar códigos de 8 a 13 dígitos numéricos
+            return /^\d{8,13}$/.test(code);
         }
 
-        // Validar EAN-13
-        function validateEAN13(code) {
-            let sum = 0;
-            for (let i = 0; i < 12; i++) {
-                const digit = parseInt(code[i]);
-                sum += digit * (i % 2 === 0 ? 1 : 3);
-            }
-            const checksum = (10 - (sum % 10)) % 10;
-            return checksum === parseInt(code[12]);
-        }
-
-        // Parar scanner
+        // Parar scanner (só quando o usuário clicar)
         async function stopScanner() {
-            if (html5QrCode && isScanning) {
-                try {
+            if (!isScanning) return;
+            
+            try {
+                if (html5QrCode) {
                     await html5QrCode.stop();
-                } catch (error) {
-                    console.log('Erro ao parar scanner:', error);
+                    html5QrCode.clear();
                 }
-                html5QrCode.clear();
+            } catch (error) {
+                console.log('Erro ao parar:', error);
             }
             
             // Resetar estado
             isScanning = false;
             html5QrCode = null;
             
-            // Esconder scanner e mostrar botão inicial
-            document.getElementById('scannerContainer').style.display = 'none';
-            document.getElementById('startBtn').classList.remove('hidden');
-            document.getElementById('cameraControls').classList.add('hidden');
-            document.getElementById('extraControls').classList.add('hidden');
+            // Mostrar botão de iniciar, esconder botão de parar
+            document.getElementById('startBtn').style.display = 'flex';
+            document.getElementById('stopBtn').style.display = 'none';
             
             // Atualizar status
             document.getElementById('status').className = 'status';
             document.getElementById('status').textContent = 'Scanner parado. Clique para iniciar novamente.';
         }
 
-        // Alternar para outra câmera
-        async function switchToCamera(cameraId) {
-            if (!isScanning || !html5QrCode) return;
+        // Atualizar lista de códigos
+        function updateCodeList() {
+            const codeList = document.getElementById('codeList');
+            codeList.innerHTML = '';
             
-            try {
-                // Parar scanner atual
-                await html5QrCode.stop();
-                
-                // Atualizar câmera atual
-                currentCameraId = cameraId;
-                
-                // Reiniciar com nova câmera
-                const config = {
-                    fps: 10,
-                    qrbox: { width: 250, height: 150 }
+            scannedCodes.forEach(code => {
+                const badge = document.createElement('div');
+                badge.className = 'code-badge';
+                badge.textContent = code;
+                badge.onclick = () => {
+                    if (productCache[code]) {
+                        showCachedProduct(code);
+                    } else {
+                        searchProduct(code);
+                    }
                 };
-                
-                await html5QrCode.start(
-                    cameraId,
-                    config,
-                    onScanSuccess,
-                    onScanError
-                );
-                
-                document.getElementById('status').textContent = 'Câmera alterada!';
-                
-            } catch (error) {
-                console.error('Erro ao alternar câmera:', error);
-                document.getElementById('status').className = 'status error';
-                document.getElementById('status').textContent = `Erro ao alternar câmera: ${error.message}`;
-            }
-        }
-
-        // Alternar câmera (botão)
-        async function switchCamera() {
-            if (cameras.length < 2) {
-                alert('Apenas uma câmera disponível');
-                return;
-            }
-            
-            // Encontrar próxima câmera
-            const currentIndex = cameras.findIndex(cam => cam.deviceId === currentCameraId);
-            const nextIndex = (currentIndex + 1) % cameras.length;
-            const nextCamera = cameras[nextIndex];
-            
-            await switchToCamera(nextCamera.deviceId);
+                codeList.appendChild(badge);
+            });
         }
 
         // Alternar lanterna
         async function toggleTorch() {
-            // Implementação básica - requer navegador com suporte
+            if (!html5QrCode || !isScanning) return;
+            
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: currentCameraId }
-                });
-                const track = stream.getVideoTracks()[0];
-                if (track.getCapabilities().torch) {
+                const track = await html5QrCode.getRunningTrack();
+                if (track && track.getCapabilities && track.getCapabilities().torch) {
                     await track.applyConstraints({
                         advanced: [{ torch: !track.getSettings().torch }]
                     });
                     const torchBtn = document.getElementById('torchBtn');
                     torchBtn.textContent = track.getSettings().torch ? '💡' : '🔦';
                 }
-                stream.getTracks().forEach(track => track.stop());
             } catch (error) {
-                console.log('Lanterna não suportada:', error);
+                console.log('Lanterna não disponível:', error);
             }
-        }
-
-        // Buscar produto manualmente
-        function searchManual() {
-            const code = document.getElementById('manualCode').value.trim();
-            if (!code || code.length < 8) {
-                alert('Digite um código de barras válido (8-13 dígitos)');
-                return;
-            }
-            searchProduct(code);
-        }
-
-        // Testar o scanner
-        function testScanner() {
-            if (!isScanning) {
-                alert('Inicie o scanner primeiro!');
-                return;
-            }
-            
-            // Simular leitura de um código de teste
-            const testCode = TEST_CODES[Math.floor(Math.random() * TEST_CODES.length)];
-            onScanSuccess(testCode, {});
         }
 
         // Buscar produto na API
         async function searchProduct(code) {
+            // Mostrar loading
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = `
-                <div class="status scanning">
-                    <div style="margin-bottom: 5px;">🔍 Buscando produto...</div>
-                    <div style="font-size: 12px;">Código: ${code}</div>
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Buscando informações para:</div>
+                    <div style="margin-top: 5px; font-weight: bold;">${code}</div>
                 </div>
             `;
             resultDiv.classList.add('active');
             
+            // Verificar cache primeiro
+            if (productCache[code]) {
+                showCachedProduct(code);
+                return;
+            }
+            
             try {
-                // Usar CORS proxy
+                // Usar proxy para evitar CORS
                 const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
                 
-                const response = await fetch(proxyUrl + encodeURIComponent(apiUrl), {
-                    headers: {
-                        'Accept': 'application/json',
-                        'User-Agent': 'ProductScanner/1.0'
-                    }
-                });
+                const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
                 
                 if (!response.ok) {
-                    throw new Error(`Erro HTTP ${response.status}`);
+                    throw new Error(`HTTP ${response.status}`);
                 }
                 
                 const data = await response.json();
@@ -755,16 +605,23 @@
                     return;
                 }
                 
+                // Salvar no cache
+                productCache[code] = data.product;
+                
+                // Mostrar resultado
                 showProductInfo(data.product, code);
                 
             } catch (error) {
                 console.error('Erro na busca:', error);
-                resultDiv.innerHTML = `
-                    <div class="status error">
-                        ❌ Erro ao buscar produto<br>
-                        <small>${error.message}</small>
-                    </div>
-                `;
+                showProductError(code, error.message);
+            }
+        }
+
+        // Mostrar produto do cache
+        function showCachedProduct(code) {
+            const product = productCache[code];
+            if (product) {
+                showProductInfo(product, code);
             }
         }
 
@@ -786,7 +643,7 @@
             const productName = product.product_name || 
                               product.product_name_pt || 
                               product.product_name_en || 
-                              'Nome não disponível';
+                              'Produto não identificado';
             
             resultDiv.innerHTML = `
                 ${imageHtml}
@@ -796,7 +653,7 @@
                         <span class="info-value">${code}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">🏷️ Produto:</span>
+                        <span class="info-label">🏷️ Nome:</span>
                         <span class="info-value">${productName}</span>
                     </div>
                     <div class="info-row">
@@ -809,8 +666,15 @@
                     </div>
                     ${product.categories ? `
                     <div class="info-row">
-                        <span class="info-label">📂 Categorias:</span>
-                        <span class="info-value">${product.categories.split(',').slice(0, 3).join(', ')}</span>
+                        <span class="info-label">📂 Categoria:</span>
+                        <span class="info-value">${product.categories.split(',')[0]}</span>
+                    </div>` : ''}
+                    ${product.nutriscore_grade ? `
+                    <div class="info-row">
+                        <span class="info-label">🥗 Nutri-Score:</span>
+                        <span class="info-value" style="color: #4CAF50; font-weight: bold;">
+                            ${product.nutriscore_grade.toUpperCase()}
+                        </span>
                     </div>` : ''}
                 </div>
             `;
@@ -819,26 +683,57 @@
         // Mostrar produto não encontrado
         function showProductNotFound(code) {
             const resultDiv = document.getElementById('result');
-            
             resultDiv.innerHTML = `
-                <div class="status error">
-                    ❌ Produto não encontrado<br>
-                    <small>Código ${code} não está na base de dados.</small>
-                    <br><br>
-                    <button class="btn" style="padding: 8px; font-size: 14px;" 
-                            onclick="searchProduct('${code}')">
-                        🔄 Tentar Novamente
-                    </button>
+                <div class="product-info">
+                    <div class="info-row">
+                        <span class="info-label">📦 Código:</span>
+                        <span class="info-value">${code}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label" style="color: #f44336;">❌ Status:</span>
+                        <span class="info-value" style="color: #f44336;">Produto não encontrado</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">💡 Dica:</span>
+                        <span class="info-value" style="color: #ccc;">
+                            Este código não está na base Open Food Facts
+                        </span>
+                    </div>
                 </div>
             `;
         }
 
-        // Permitir Enter no campo manual
-        document.getElementById('manualCode').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchManual();
-            }
-        });
+        // Mostrar erro
+        function showProductError(code, errorMsg) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div class="product-info">
+                    <div class="info-row">
+                        <span class="info-label">📦 Código:</span>
+                        <span class="info-value">${code}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label" style="color: #ff9800;">⚠️ Erro:</span>
+                        <span class="info-value" style="color: #ff9800;">
+                            ${errorMsg || 'Erro na conexão'}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">🔄 Ação:</span>
+                        <span class="info-value">
+                            <button onclick="searchProduct('${code}')" 
+                                    style="background: #4CAF50; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
+                                Tentar Novamente
+                            </button>
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Iniciar automaticamente ao carregar a página?
+        // Descomente a linha abaixo se quiser que inicie automaticamente:
+        // window.addEventListener('load', startScanner);
     </script>
 </body>
 </html>
