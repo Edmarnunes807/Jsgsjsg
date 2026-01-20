@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scanner de Códigos de Barras</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -80,7 +81,7 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.2s;
             margin-bottom: 10px;
             display: flex;
             align-items: center;
@@ -101,17 +102,23 @@
             background: #ef4444;
         }
 
+        .btn-success {
+            background: #10b981;
+        }
+
         .scanner-container {
             position: relative;
             border-radius: 12px;
             overflow: hidden;
             margin: 20px 0;
             background: #000;
+            min-height: 300px;
             display: none;
         }
 
-        #qr-reader {
+        #reader {
             width: 100% !important;
+            min-height: 300px;
         }
 
         .scanner-overlay {
@@ -122,26 +129,26 @@
             height: 100%;
             pointer-events: none;
             z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .focus-frame {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70%;
-            height: 150px;
+            width: 80%;
+            height: 120px;
             border: 4px solid #00ff00;
             border-radius: 10px;
-            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.6),
-                        0 0 30px rgba(0, 255, 0, 0.5);
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5),
+                        0 0 20px rgba(0, 255, 0, 0.5);
+            position: relative;
         }
 
         .scan-line {
             position: absolute;
-            top: 20%;
-            left: 5%;
-            right: 5%;
+            top: 0;
+            left: 0;
+            width: 100%;
             height: 3px;
             background: linear-gradient(90deg, 
                 transparent 0%, 
@@ -151,8 +158,8 @@
         }
 
         @keyframes scan {
-            0%, 100% { top: 20%; }
-            50% { top: 80%; }
+            0%, 100% { top: 0; }
+            50% { top: 100%; }
         }
 
         .status {
@@ -168,6 +175,11 @@
         .status.scanning {
             background: #d1fae5;
             color: #065f46;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #dc2626;
         }
 
         .result {
@@ -222,30 +234,18 @@
             margin-bottom: 15px;
         }
 
-        .error {
-            background: #fee2e2;
-            color: #dc2626;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 15px;
-            text-align: center;
-        }
-
-        .camera-selector {
+        .camera-controls {
+            display: flex;
+            gap: 10px;
             margin: 10px 0;
-            text-align: center;
         }
 
-        select {
+        .camera-controls select {
+            flex: 1;
             padding: 10px;
             border: 2px solid #e5e7eb;
             border-radius: 8px;
             font-size: 14px;
-            width: 100%;
-        }
-
-        .hidden {
-            display: none;
         }
 
         .torch-control {
@@ -269,15 +269,45 @@
             justify-content: center;
         }
 
-        .hint {
-            text-align: center;
+        .hidden {
+            display: none;
+        }
+
+        .test-codes {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e0f2fe;
+            border-radius: 10px;
+        }
+
+        .test-codes h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #0369a1;
+        }
+
+        .code-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .code-badge {
+            background: white;
+            padding: 6px 12px;
+            border-radius: 20px;
             font-size: 12px;
-            color: #6b7280;
-            margin-top: 10px;
+            cursor: pointer;
+            border: 1px solid #bae6fd;
+            transition: all 0.2s;
+        }
+
+        .code-badge:hover {
+            background: #0ea5e9;
+            color: white;
+            transform: translateY(-2px);
         }
     </style>
-    <!-- Bibliotecas simplificadas -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -287,89 +317,115 @@
         </div>
 
         <div class="content">
+            <!-- Entrada manual -->
             <div class="input-group">
                 <input type="text" 
-                       id="manual-code" 
+                       id="manualCode" 
                        placeholder="Digite o código de barras (13 dígitos)"
-                       maxlength="13">
+                       maxlength="13"
+                       value="7891000315507">
                 <button class="btn" onclick="searchManual()">
-                    🔍 Buscar Produto
+                    🔍 Buscar Produto Manualmente
                 </button>
             </div>
 
-            <button class="btn" id="start-scanner" onclick="startScanner()">
-                📷 Iniciar Scanner
+            <!-- Botão do scanner -->
+            <button class="btn" id="startBtn" onclick="initScanner()">
+                📷 Abrir Scanner de Câmera
             </button>
 
-            <div class="camera-selector hidden" id="camera-selector">
-                <select id="camera-select">
-                    <option value="">Selecione uma câmera...</option>
+            <!-- Controles da câmera -->
+            <div class="camera-controls hidden" id="cameraControls">
+                <select id="cameraSelect">
+                    <option value="">Selecionando câmera...</option>
                 </select>
+                <button class="btn btn-secondary" onclick="stopScanner()">
+                    ⏹️ Parar
+                </button>
             </div>
 
-            <div class="scanner-container" id="scanner-container">
-                <div id="qr-reader"></div>
+            <!-- Container do scanner -->
+            <div class="scanner-container" id="scannerContainer">
+                <div id="reader"></div>
                 <div class="scanner-overlay">
                     <div class="focus-frame">
                         <div class="scan-line"></div>
                     </div>
                 </div>
                 <div class="torch-control">
-                    <button class="torch-btn" id="torch-btn" onclick="toggleTorch()">🔦</button>
+                    <button class="torch-btn" id="torchBtn" onclick="toggleTorch()">🔦</button>
                 </div>
             </div>
 
+            <!-- Status -->
             <div class="status" id="status">
-                Pronto para escanear
+                Clique em "Abrir Scanner" para começar
             </div>
 
-            <div class="controls hidden" id="scanner-controls">
-                <button class="btn btn-secondary" onclick="stopScanner()">
-                    ⏹️ Parar Scanner
-                </button>
-                <button class="btn" onclick="switchCamera()">
+            <!-- Controles extras -->
+            <div class="camera-controls hidden" id="extraControls">
+                <button class="btn btn-success" onclick="switchCamera()">
                     🔄 Alternar Câmera
                 </button>
+                <button class="btn" onclick="testScanner()">
+                    🧪 Testar Scanner
+                </button>
             </div>
 
-            <div class="result" id="result">
-                <!-- Resultado será inserido aqui -->
-            </div>
+            <!-- Resultado -->
+            <div class="result" id="result"></div>
 
-            <div class="hint">
-                Dica: Use a câmera traseira e mantenha o código estável
+            <!-- Códigos de teste -->
+            <div class="test-codes">
+                <h3>🎯 Códigos de teste (clique para usar):</h3>
+                <div class="code-list" id="testCodes"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // Configurações
-        let scanner = null;
+        // Variáveis globais
+        let html5QrCode = null;
         let currentCameraId = null;
         let cameras = [];
-        let isTorchOn = false;
-        let lastScannedCode = '';
+        let isScanning = false;
+        let lastScanned = '';
         let lastScanTime = 0;
 
-        // Códigos de teste conhecidos
+        // Códigos de teste reais
         const TEST_CODES = [
             '7891000315507', // Nescau
             '7894900010015', // Coca-Cola
             '7891910000197', // Arroz Tio João
-            '7896036090015', // Pão de Forma Pullman
             '7892840816841', // Leite Ninho
             '7896051111027', // Óleo Soja
             '7891150002658', // Café Pilão
             '7891999010026', // Feijão Carioca
-            '7894650050011', // Sabão em Pó OMO
-            '7891024115109'  // Fralda Pampers
+            '7894650050011', // Sabão OMO
+            '7891024115109', // Fralda Pampers
+            '7896036090015'  // Pão Pullman
         ];
 
-        // Inicializar
+        // Inicializar a página
         document.addEventListener('DOMContentLoaded', function() {
+            loadTestCodes();
             loadCameras();
-            document.getElementById('manual-code').value = TEST_CODES[0];
         });
+
+        // Carregar códigos de teste
+        function loadTestCodes() {
+            const container = document.getElementById('testCodes');
+            TEST_CODES.forEach(code => {
+                const badge = document.createElement('div');
+                badge.className = 'code-badge';
+                badge.textContent = code;
+                badge.onclick = () => {
+                    document.getElementById('manualCode').value = code;
+                    searchManual();
+                };
+                container.appendChild(badge);
+            });
+        }
 
         // Carregar câmeras disponíveis
         async function loadCameras() {
@@ -377,7 +433,7 @@
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 cameras = devices.filter(device => device.kind === 'videoinput');
                 
-                const select = document.getElementById('camera-select');
+                const select = document.getElementById('cameraSelect');
                 select.innerHTML = '<option value="">Selecione uma câmera...</option>';
                 
                 cameras.forEach((camera, index) => {
@@ -388,64 +444,89 @@
                     select.appendChild(option);
                 });
             } catch (error) {
-                console.error('Erro ao carregar câmeras:', error);
+                console.log('Erro ao carregar câmeras:', error);
             }
         }
 
-        // Iniciar scanner
-        async function startScanner() {
+        // Inicializar o scanner
+        async function initScanner() {
+            if (isScanning) return;
+            
             try {
-                document.getElementById('start-scanner').classList.add('hidden');
-                document.getElementById('camera-selector').classList.remove('hidden');
-                document.getElementById('scanner-controls').classList.remove('hidden');
-                
                 const status = document.getElementById('status');
-                status.textContent = 'Iniciando câmera...';
-                status.classList.add('scanning');
+                status.textContent = 'Solicitando acesso à câmera...';
+                status.className = 'status scanning';
                 
-                // Configuração da câmera
+                // Esconder botão inicial e mostrar controles
+                document.getElementById('startBtn').classList.add('hidden');
+                document.getElementById('cameraControls').classList.remove('hidden');
+                document.getElementById('extraControls').classList.remove('hidden');
+                
+                // Configurações do scanner
                 const config = {
-                    fps: 30,
-                    qrbox: { width: 250, height: 150 }, // Área de foco maior
+                    fps: 10,
+                    qrbox: { 
+                        width: 250, 
+                        height: 150 
+                    },
                     rememberLastUsedCamera: true,
-                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+                    supportedScanTypes: [
+                        Html5QrcodeScanType.SCAN_TYPE_CAMERA
+                    ],
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
                         Html5QrcodeSupportedFormats.EAN_8,
                         Html5QrcodeSupportedFormats.UPC_A,
                         Html5QrcodeSupportedFormats.UPC_E,
-                        Html5QrcodeSupportedFormats.CODE_128
+                        Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.CODE_39
                     ]
                 };
-
-                // Inicializar scanner
-                scanner = new Html5Qrcode("qr-reader");
                 
-                // Tentar encontrar a câmera traseira primeiro
+                // Criar instância do scanner
+                html5QrCode = new Html5Qrcode("reader");
+                
+                // Tentar usar câmera traseira primeiro
                 let cameraId = currentCameraId;
                 if (!cameraId && cameras.length > 0) {
                     const rearCamera = cameras.find(cam => 
-                        cam.label.toLowerCase().includes('back') || 
-                        cam.label.toLowerCase().includes('rear') ||
-                        cam.label.toLowerCase().includes('environment')
+                        cam.label.includes('back') || 
+                        cam.label.includes('rear') ||
+                        cam.label.includes('environment')
                     );
                     cameraId = rearCamera ? rearCamera.deviceId : cameras[0].deviceId;
+                    currentCameraId = cameraId;
                 }
-
-                // Iniciar leitura
-                await scanner.start(
+                
+                // Iniciar o scanner
+                await html5QrCode.start(
                     cameraId || { facingMode: "environment" },
                     config,
                     onScanSuccess,
                     onScanError
                 );
                 
-                document.getElementById('scanner-container').style.display = 'block';
-                status.textContent = 'Aponte para o código de barras...';
+                // Mostrar container do scanner
+                document.getElementById('scannerContainer').style.display = 'block';
+                status.textContent = 'Scanner ativo! Aponte para um código de barras...';
+                isScanning = true;
+                
+                // Atualizar seletor de câmera
+                if (currentCameraId) {
+                    document.getElementById('cameraSelect').value = currentCameraId;
+                }
+                
+                // Configurar evento de mudança de câmera
+                document.getElementById('cameraSelect').onchange = function() {
+                    if (this.value) {
+                        switchToCamera(this.value);
+                    }
+                };
                 
             } catch (error) {
                 console.error('Erro ao iniciar scanner:', error);
-                document.getElementById('status').textContent = 'Erro: ' + error.message;
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = `Erro: ${error.message}`;
                 stopScanner();
             }
         }
@@ -456,26 +537,26 @@
             const code = decodedText.trim();
             
             // Verificar se é um código válido (EAN-13 tem 13 dígitos)
-            if (code.length !== 13 || !/^\d+$/.test(code)) {
-                console.log('Código inválido:', code);
+            if (!isValidBarcode(code)) {
+                console.log('Código inválido ignorado:', code);
                 return;
             }
             
             // Prevenir leituras duplicadas rápidas
-            if (code === lastScannedCode && (now - lastScanTime) < 2000) {
+            if (code === lastScanned && (now - lastScanTime) < 2000) {
                 return;
             }
             
-            lastScannedCode = code;
+            lastScanned = code;
             lastScanTime = now;
             
             // Feedback visual
             const status = document.getElementById('status');
             status.textContent = `✅ Código detectado: ${code}`;
             
-            // Parar scanner temporariamente
-            if (scanner) {
-                scanner.pause();
+            // Pausar scanner temporariamente
+            if (html5QrCode) {
+                html5QrCode.pause();
             }
             
             // Buscar produto
@@ -483,8 +564,8 @@
             
             // Reiniciar scanner após 3 segundos
             setTimeout(() => {
-                if (scanner && scanner.getState() === Html5QrcodeScannerState.PAUSED) {
-                    scanner.resume();
+                if (html5QrCode && !isScanning) {
+                    html5QrCode.resume();
                     status.textContent = 'Pronto para escanear novamente...';
                 }
             }, 3000);
@@ -492,10 +573,152 @@
 
         // Erro na leitura
         function onScanError(error) {
-            // Ignorar erros comuns de "nenhum código encontrado"
-            if (!error.message.includes("No MultiFormat Readers")) {
+            // Ignorar erros de "nenhum código encontrado"
+            if (!error.includes("No MultiFormat Readers")) {
                 console.log('Erro de scan:', error);
             }
+        }
+
+        // Validar código de barras
+        function isValidBarcode(code) {
+            // Deve ter entre 8 e 13 dígitos e ser apenas números
+            if (!/^\d+$/.test(code)) return false;
+            if (code.length < 8 || code.length > 13) return false;
+            
+            // Validação básica de dígito verificador para EAN-13
+            if (code.length === 13) {
+                return validateEAN13(code);
+            }
+            
+            return true;
+        }
+
+        // Validar EAN-13
+        function validateEAN13(code) {
+            let sum = 0;
+            for (let i = 0; i < 12; i++) {
+                const digit = parseInt(code[i]);
+                sum += digit * (i % 2 === 0 ? 1 : 3);
+            }
+            const checksum = (10 - (sum % 10)) % 10;
+            return checksum === parseInt(code[12]);
+        }
+
+        // Parar scanner
+        async function stopScanner() {
+            if (html5QrCode && isScanning) {
+                try {
+                    await html5QrCode.stop();
+                } catch (error) {
+                    console.log('Erro ao parar scanner:', error);
+                }
+                html5QrCode.clear();
+            }
+            
+            // Resetar estado
+            isScanning = false;
+            html5QrCode = null;
+            
+            // Esconder scanner e mostrar botão inicial
+            document.getElementById('scannerContainer').style.display = 'none';
+            document.getElementById('startBtn').classList.remove('hidden');
+            document.getElementById('cameraControls').classList.add('hidden');
+            document.getElementById('extraControls').classList.add('hidden');
+            
+            // Atualizar status
+            document.getElementById('status').className = 'status';
+            document.getElementById('status').textContent = 'Scanner parado. Clique para iniciar novamente.';
+        }
+
+        // Alternar para outra câmera
+        async function switchToCamera(cameraId) {
+            if (!isScanning || !html5QrCode) return;
+            
+            try {
+                // Parar scanner atual
+                await html5QrCode.stop();
+                
+                // Atualizar câmera atual
+                currentCameraId = cameraId;
+                
+                // Reiniciar com nova câmera
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 150 }
+                };
+                
+                await html5QrCode.start(
+                    cameraId,
+                    config,
+                    onScanSuccess,
+                    onScanError
+                );
+                
+                document.getElementById('status').textContent = 'Câmera alterada!';
+                
+            } catch (error) {
+                console.error('Erro ao alternar câmera:', error);
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = `Erro ao alternar câmera: ${error.message}`;
+            }
+        }
+
+        // Alternar câmera (botão)
+        async function switchCamera() {
+            if (cameras.length < 2) {
+                alert('Apenas uma câmera disponível');
+                return;
+            }
+            
+            // Encontrar próxima câmera
+            const currentIndex = cameras.findIndex(cam => cam.deviceId === currentCameraId);
+            const nextIndex = (currentIndex + 1) % cameras.length;
+            const nextCamera = cameras[nextIndex];
+            
+            await switchToCamera(nextCamera.deviceId);
+        }
+
+        // Alternar lanterna
+        async function toggleTorch() {
+            // Implementação básica - requer navegador com suporte
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: currentCameraId }
+                });
+                const track = stream.getVideoTracks()[0];
+                if (track.getCapabilities().torch) {
+                    await track.applyConstraints({
+                        advanced: [{ torch: !track.getSettings().torch }]
+                    });
+                    const torchBtn = document.getElementById('torchBtn');
+                    torchBtn.textContent = track.getSettings().torch ? '💡' : '🔦';
+                }
+                stream.getTracks().forEach(track => track.stop());
+            } catch (error) {
+                console.log('Lanterna não suportada:', error);
+            }
+        }
+
+        // Buscar produto manualmente
+        function searchManual() {
+            const code = document.getElementById('manualCode').value.trim();
+            if (!code || code.length < 8) {
+                alert('Digite um código de barras válido (8-13 dígitos)');
+                return;
+            }
+            searchProduct(code);
+        }
+
+        // Testar o scanner
+        function testScanner() {
+            if (!isScanning) {
+                alert('Inicie o scanner primeiro!');
+                return;
+            }
+            
+            // Simular leitura de um código de teste
+            const testCode = TEST_CODES[Math.floor(Math.random() * TEST_CODES.length)];
+            onScanSuccess(testCode, {});
         }
 
         // Buscar produto na API
@@ -503,30 +726,31 @@
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = `
                 <div class="status scanning">
-                    🔍 Buscando informações para o código: ${code}
+                    <div style="margin-bottom: 5px;">🔍 Buscando produto...</div>
+                    <div style="font-size: 12px;">Código: ${code}</div>
                 </div>
             `;
             resultDiv.classList.add('active');
             
             try {
-                // Usar proxy para evitar CORS
+                // Usar CORS proxy
                 const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
                 
                 const response = await fetch(proxyUrl + encodeURIComponent(apiUrl), {
                     headers: {
                         'Accept': 'application/json',
-                        'User-Agent': 'ScannerApp/1.0'
+                        'User-Agent': 'ProductScanner/1.0'
                     }
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error(`Erro HTTP ${response.status}`);
                 }
                 
                 const data = await response.json();
                 
-                if (data.status !== 1 || !data.product) {
+                if (data.status !== 1) {
                     showProductNotFound(code);
                     return;
                 }
@@ -534,15 +758,11 @@
                 showProductInfo(data.product, code);
                 
             } catch (error) {
-                console.error('Erro ao buscar produto:', error);
+                console.error('Erro na busca:', error);
                 resultDiv.innerHTML = `
-                    <div class="error">
-                        ❌ Erro ao conectar com a API<br>
+                    <div class="status error">
+                        ❌ Erro ao buscar produto<br>
                         <small>${error.message}</small>
-                        <br><br>
-                        <button class="btn" onclick="searchProduct('${code}')" style="padding: 8px; font-size: 14px;">
-                            🔄 Tentar Novamente
-                        </button>
                     </div>
                 `;
             }
@@ -555,38 +775,42 @@
             let imageHtml = '';
             if (product.image_front_url || product.image_url) {
                 const imgUrl = product.image_front_url || product.image_url;
-                imageHtml = `<img src="${imgUrl}" class="product-image" alt="${product.product_name || 'Produto'}">`;
+                imageHtml = `
+                    <img src="${imgUrl}" 
+                         class="product-image" 
+                         alt="${product.product_name || 'Produto'}"
+                         onerror="this.style.display='none'">
+                `;
             }
+            
+            const productName = product.product_name || 
+                              product.product_name_pt || 
+                              product.product_name_en || 
+                              'Nome não disponível';
             
             resultDiv.innerHTML = `
                 ${imageHtml}
                 <div class="product-info">
                     <div class="info-row">
-                        <span class="info-label">Código:</span>
+                        <span class="info-label">📦 Código:</span>
                         <span class="info-value">${code}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">Produto:</span>
-                        <span class="info-value">${product.product_name || product.product_name_pt || product.product_name_en || 'Não informado'}</span>
+                        <span class="info-label">🏷️ Produto:</span>
+                        <span class="info-value">${productName}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">Marca:</span>
+                        <span class="info-label">🏭 Marca:</span>
                         <span class="info-value">${product.brands || product.brand_owner || 'Não informada'}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">Quantidade:</span>
+                        <span class="info-label">⚖️ Quantidade:</span>
                         <span class="info-value">${product.quantity || product.product_quantity || 'Não informada'}</span>
                     </div>
+                    ${product.categories ? `
                     <div class="info-row">
-                        <span class="info-label">Categorias:</span>
-                        <span class="info-value">${product.categories || 'Não informado'}</span>
-                    </div>
-                    ${product.nutriscore_grade ? `
-                    <div class="info-row">
-                        <span class="info-label">Nutri-Score:</span>
-                        <span class="info-value" style="font-weight: bold; color: ${getNutriScoreColor(product.nutriscore_grade)}">
-                            ${product.nutriscore_grade.toUpperCase()}
-                        </span>
+                        <span class="info-label">📂 Categorias:</span>
+                        <span class="info-value">${product.categories.split(',').slice(0, 3).join(', ')}</span>
                     </div>` : ''}
                 </div>
             `;
@@ -596,125 +820,21 @@
         function showProductNotFound(code) {
             const resultDiv = document.getElementById('result');
             
-            // Gerar sugestões de códigos similares
-            const suggestions = TEST_CODES
-                .filter(testCode => testCode.substring(0, 3) === code.substring(0, 3))
-                .slice(0, 3);
-            
-            let suggestionsHtml = '';
-            if (suggestions.length > 0) {
-                suggestionsHtml = `
-                    <br><br>
-                    <strong>Tente estes códigos de teste:</strong><br>
-                    ${suggestions.map(code => `<code>${code}</code>`).join(', ')}
-                `;
-            }
-            
             resultDiv.innerHTML = `
-                <div class="error">
+                <div class="status error">
                     ❌ Produto não encontrado<br>
-                    <small>Código: ${code}</small>
-                    ${suggestionsHtml}
+                    <small>Código ${code} não está na base de dados.</small>
+                    <br><br>
+                    <button class="btn" style="padding: 8px; font-size: 14px;" 
+                            onclick="searchProduct('${code}')">
+                        🔄 Tentar Novamente
+                    </button>
                 </div>
             `;
         }
 
-        // Buscar manualmente
-        function searchManual() {
-            const code = document.getElementById('manual-code').value.trim();
-            if (!code || code.length !== 13) {
-                alert('Digite um código EAN-13 válido (13 dígitos)');
-                return;
-            }
-            searchProduct(code);
-        }
-
-        // Parar scanner
-        async function stopScanner() {
-            if (scanner) {
-                try {
-                    await scanner.stop();
-                } catch (error) {
-                    console.error('Erro ao parar scanner:', error);
-                }
-                scanner = null;
-            }
-            
-            document.getElementById('scanner-container').style.display = 'none';
-            document.getElementById('start-scanner').classList.remove('hidden');
-            document.getElementById('camera-selector').classList.add('hidden');
-            document.getElementById('scanner-controls').classList.add('hidden');
-            document.getElementById('status').textContent = 'Scanner parado';
-            document.getElementById('status').classList.remove('scanning');
-            
-            // Desligar lanterna se estiver ligada
-            if (isTorchOn) {
-                toggleTorch();
-            }
-        }
-
-        // Alternar câmera
-        async function switchCamera() {
-            if (!scanner || cameras.length < 2) {
-                alert('Apenas uma câmera disponível');
-                return;
-            }
-            
-            await stopScanner();
-            
-            // Encontrar próxima câmera
-            const currentIndex = cameras.findIndex(cam => cam.deviceId === currentCameraId);
-            const nextIndex = (currentIndex + 1) % cameras.length;
-            currentCameraId = cameras[nextIndex].deviceId;
-            
-            // Reiniciar scanner com nova câmera
-            setTimeout(startScanner, 500);
-        }
-
-        // Alternar lanterna
-        async function toggleTorch() {
-            if (!scanner || !scanner.getRunningTrackCapabilities) {
-                return;
-            }
-            
-            try {
-                const track = await scanner.getRunningTrack();
-                if (track && track.getCapabilities && track.getCapabilities().torch) {
-                    await track.applyConstraints({
-                        advanced: [{ torch: !isTorchOn }]
-                    });
-                    isTorchOn = !isTorchOn;
-                    document.getElementById('torch-btn').textContent = isTorchOn ? '💡' : '🔦';
-                }
-            } catch (error) {
-                console.error('Erro ao controlar lanterna:', error);
-            }
-        }
-
-        // Cor para Nutri-Score
-        function getNutriScoreColor(grade) {
-            const colors = {
-                'a': '#4caf50', // Verde
-                'b': '#8bc34a', // Verde claro
-                'c': '#ffeb3b', // Amarelo
-                'd': '#ff9800', // Laranja
-                'e': '#f44336'  // Vermelho
-            };
-            return colors[grade.toLowerCase()] || '#666';
-        }
-
-        // Permitir selecionar câmera manualmente
-        document.getElementById('camera-select').addEventListener('change', function(e) {
-            if (e.target.value) {
-                currentCameraId = e.target.value;
-                if (scanner) {
-                    switchCamera();
-                }
-            }
-        });
-
         // Permitir Enter no campo manual
-        document.getElementById('manual-code').addEventListener('keypress', function(e) {
+        document.getElementById('manualCode').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 searchManual();
             }
