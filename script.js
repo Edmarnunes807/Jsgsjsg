@@ -352,6 +352,7 @@ async function searchInGoogleSheets(ean) {
     }
 }
 
+// ========== AJUSTE SIMPLES: getAllProductsFromSheets ==========
 async function getAllProductsFromSheets() {
     if (!GOOGLE_SHEETS_API) {
         console.warn("URL do Google Sheets não configurada");
@@ -359,14 +360,28 @@ async function getAllProductsFromSheets() {
     }
     
     try {
-        const url = `${GOOGLE_SHEETS_API}?operation=getAll`;
+        // USANDO A OPERAÇÃO 'list' QUE JÁ EXISTE NA SUA API
+        // com um limite grande para pegar todos os produtos
+        const url = `${GOOGLE_SHEETS_API}?operation=list&limit=1000`;
         const response = await fetch(url);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
         
-        return await response.json();
+        const result = await response.json();
+        
+        // A sua API retorna: {success: true, produtos: [...], paginacao: {...}}
+        if (result.success && result.produtos) {
+            return {
+                success: true,
+                products: result.produtos,
+                total: result.paginacao ? result.paginacao.total : result.produtos.length
+            };
+        }
+        
+        return result;
+        
     } catch (error) {
         console.error('Erro ao buscar todos os produtos:', error);
         return null;
