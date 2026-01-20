@@ -4,10 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Scanner de Produtos</title>
-
   <!-- QuaggaJS -->
   <script src="https://unpkg.com/@ericblade/quagga2/dist/quagga.js"></script>
-
   <style>
     body {
       margin: 0;
@@ -66,22 +64,31 @@
       border-radius: 12px;
       overflow: hidden;
       position: relative;
+      width: 100%;
+      height: 300px;
+      background: #000;
     }
 
-    /* Moldura visual de foco */
+    /* Moldura visual de foco melhorada */
     #scanner::after {
       content: "";
       position: absolute;
-      top: 30%;
-      left: 15%;
-      right: 15%;
-      bottom: 30%;
-      border: 2px dashed rgba(255,255,255,0.8);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      height: 60px;
+      border: 3px solid rgba(0, 255, 0, 0.6);
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
       pointer-events: none;
+      z-index: 10;
+      border-radius: 8px;
     }
 
     #scanner video {
       width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .resultado {
@@ -104,6 +111,36 @@
       margin: 6px 0;
       font-size: 15px;
     }
+
+    .scanner-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .scanner-controls .btn {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    .btn-parar {
+      background: #dc3545 !important;
+    }
+
+    .btn-parar:hover {
+      background: #c82333 !important;
+    }
+
+    .mensagem {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin: 10px 0;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -120,9 +157,18 @@
   />
 
   <button class="btn" onclick="buscarCodigoManual()">🔍 Buscar Código</button>
-  <button class="btn" onclick="iniciarScanner()">📷 Abrir Scanner</button>
+  <button class="btn" onclick="iniciarScanner()" id="btnScanner">📷 Abrir Scanner</button>
+
+  <div class="mensagem" id="mensagemScanner">
+    Posicione o código de barras dentro da área verde
+  </div>
 
   <div id="scanner"></div>
+
+  <div class="scanner-controls" id="scannerControls" style="display: none;">
+    <button class="btn btn-parar" onclick="pararScanner()">⏹️ Parar Scanner</button>
+    <button class="btn" onclick="alternarCamera()">🔄 Alternar Câmera</button>
+  </div>
 
   <div class="resultado" id="resultado">
     <img id="imagemProduto" style="display:none;">
@@ -135,58 +181,167 @@
 
 <script>
 let scannerAtivo = false;
+let cameraFrente = false;
+let ultimoCodigoLido = '';
+let timeoutDetecao;
 
 function iniciarScanner() {
   if (scannerAtivo) return;
 
   const scannerDiv = document.getElementById("scanner");
+  const mensagemDiv = document.getElementById("mensagemScanner");
+  const controlsDiv = document.getElementById("scannerControls");
+  const btnScanner = document.getElementById("btnScanner");
+  
   scannerDiv.style.display = "block";
+  mensagemDiv.style.display = "block";
+  controlsDiv.style.display = "flex";
+  btnScanner.style.display = "none";
+  
+  document.getElementById("codigoManual").style.display = "none";
+  document.querySelector('button[onclick="buscarCodigoManual()"]').style.display = "none";
 
   Quagga.init({
     inputStream: {
       type: "LiveStream",
       target: scannerDiv,
       constraints: {
-        facingMode: "environment",
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
+        facingMode: cameraFrente ? "user" : "environment",
+        width: { min: 640, ideal: 1280, max: 1920 },
+        height: { min: 480, ideal: 720, max: 1080 },
+        aspectRatio: { ideal: 4/3 },
         advanced: [
-          { zoom: 2.0 },
-          { focusMode: "continuous" }
+          { zoom: { min: 1, max: 2, ideal: 1.5 } },
+          { focusMode: "continuous" },
+          { exposureMode: "continuous" },
+          { whiteBalanceMode: "continuous" }
         ]
       },
-      area: {
-        top: "30%",
-        right: "15%",
-        left: "15%",
-        bottom: "30%"
+      area: { // Área de detecção maior
+        top: "20%",
+        right: "10%",
+        left: "10%",
+        bottom: "20%"
       }
     },
     locator: {
-      patchSize: "medium",
-      halfSample: false
+      patchSize: "large", // Aumentado para detectar códigos pequenos
+      halfSample: true
     },
-    numOfWorkers: navigator.hardwareConcurrency || 4,
+    frequency: 10, // Verificação mais rápida
+    numOfWorkers: navigator.hardwareConcurrency || 2,
     decoder: {
-      readers: ["ean_reader", "ean_8_reader", "upc_reader"]
+      readers: [
+        "ean_reader",
+        "ean_8_reader",
+        "upc_reader",
+        "upc_e_reader",
+        "code_128_reader",
+        "code_39_reader",
+        "code_93_reader"
+      ],
+      multiple: false
     },
-    locate: true
+    locate: true,
+    debug: {
+      drawBoundingBox: true,
+      showFrequency: false,
+      drawScanline: true,
+      showPattern: false
+    }
   }, err => {
     if (err) {
-      alert("Erro ao acessar a câmera");
+      console.error("Erro ao iniciar scanner:", err);
+      alert("Erro ao acessar a câmera: " + err.message);
+      pararScanner();
       return;
     }
     Quagga.start();
     scannerAtivo = true;
+    mensagemDiv.innerHTML = "Scanner ativo! Aponte para o código de barras";
   });
 
   Quagga.offDetected();
   Quagga.onDetected(data => {
+    if (!scannerAtivo) return;
+    
     const codigo = data.codeResult.code;
+    const now = Date.now();
+    
+    // Prevenir leituras duplicadas rápidas
+    if (codigo === ultimoCodigoLido && (now - timeoutDetecao) < 2000) {
+      return;
+    }
+    
+    ultimoCodigoLido = codigo;
+    timeoutDetecao = now;
+    
+    // Feedback visual
+    const scannerDiv = document.getElementById("scanner");
+    scannerDiv.style.boxShadow = "0 0 30px rgba(0, 255, 0, 0.7)";
+    setTimeout(() => {
+      scannerDiv.style.boxShadow = "";
+    }, 300);
+    
+    // Parar scanner temporariamente e buscar produto
     Quagga.stop();
     scannerAtivo = false;
+    
     buscarProduto(codigo);
+    
+    // Mostrar mensagem
+    document.getElementById("mensagemScanner").innerHTML = 
+      `✅ Código lido: ${codigo}<br>Buscando informações...`;
+    
+    // Reiniciar scanner após 3 segundos
+    setTimeout(() => {
+      if (!scannerAtivo) {
+        iniciarScanner();
+      }
+    }, 3000);
   });
+
+  // Melhorar detecção em condições ruins
+  Quagga.onProcessed(function(result) {
+    if (!result) return;
+    
+    const drawingCtx = Quagga.canvas.ctx.overlay;
+    const drawingCanvas = Quagga.canvas.dom.overlay;
+    
+    if (result.codeResult && result.codeResult.code) {
+      drawingCtx.font = "18px Arial";
+      drawingCtx.fillStyle = 'green';
+      drawingCtx.fillText(`Código: ${result.codeResult.code}`, 10, 20);
+    }
+  });
+}
+
+function pararScanner() {
+  if (scannerAtivo) {
+    Quagga.stop();
+  }
+  scannerAtivo = false;
+  
+  const scannerDiv = document.getElementById("scanner");
+  const mensagemDiv = document.getElementById("mensagemScanner");
+  const controlsDiv = document.getElementById("scannerControls");
+  const btnScanner = document.getElementById("btnScanner");
+  
+  scannerDiv.style.display = "none";
+  mensagemDiv.style.display = "none";
+  controlsDiv.style.display = "none";
+  btnScanner.style.display = "block";
+  
+  document.getElementById("codigoManual").style.display = "block";
+  document.querySelector('button[onclick="buscarCodigoManual()"]').style.display = "block";
+}
+
+function alternarCamera() {
+  pararScanner();
+  cameraFrente = !cameraFrente;
+  setTimeout(() => {
+    iniciarScanner();
+  }, 500);
 }
 
 function buscarCodigoManual() {
@@ -199,8 +354,16 @@ function buscarCodigoManual() {
 }
 
 function buscarProduto(codigo) {
+  // Mostrar loading
+  const resultado = document.getElementById("resultado");
+  resultado.style.display = "block";
+  resultado.innerHTML = `<div class="mensagem">Buscando informações...</div>`;
+
   fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
+      return res.json();
+    })
     .then(data => {
       const resultado = document.getElementById("resultado");
       const img = document.getElementById("imagemProduto");
@@ -208,7 +371,7 @@ function buscarProduto(codigo) {
       resultado.style.display = "block";
       document.getElementById("codigo").innerText = codigo;
 
-      if (data.status !== 1) {
+      if (data.status !== 1 || !data.product) {
         document.getElementById("nome").innerText = "Produto não encontrado";
         document.getElementById("marca").innerText = "-";
         document.getElementById("quantidade").innerText = "-";
@@ -218,18 +381,32 @@ function buscarProduto(codigo) {
 
       const p = data.product;
 
-      document.getElementById("nome").innerText = p.product_name || "Não informado";
-      document.getElementById("marca").innerText = p.brands || "Não informada";
-      document.getElementById("quantidade").innerText = p.quantity || "Não informada";
+      document.getElementById("nome").innerText = 
+        p.product_name || p.product_name_pt || p.product_name_en || "Não informado";
+      document.getElementById("marca").innerText = 
+        p.brands || p.brand_owner || "Não informada";
+      document.getElementById("quantidade").innerText = 
+        p.quantity || p.product_quantity || "Não informada";
 
-      if (p.image_front_url) {
-        img.src = p.image_front_url;
+      if (p.image_front_url || p.image_url) {
+        img.src = p.image_front_url || p.image_url;
         img.style.display = "block";
       } else {
         img.style.display = "none";
       }
+    })
+    .catch(err => {
+      console.error("Erro na busca:", err);
+      resultado.innerHTML = `<div class="mensagem">Erro ao buscar produto. Tente novamente.</div>`;
     });
 }
+
+// Fechar scanner ao pressionar ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && scannerAtivo) {
+    pararScanner();
+  }
+});
 </script>
 
 </body>
