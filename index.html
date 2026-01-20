@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner com Controle de Foco</title>
+    <title>Scanner de Códigos</title>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * {
@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: #f0f2f5;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -24,50 +24,46 @@
 
         .container {
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             width: 100%;
             max-width: 500px;
             overflow: hidden;
         }
 
         .header {
-            background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+            background: #4CAF50;
             color: white;
-            padding: 25px;
+            padding: 20px;
             text-align: center;
         }
 
         .header h1 {
-            font-size: 24px;
+            font-size: 22px;
             margin-bottom: 5px;
-            color: #e94560;
         }
 
         .header p {
             opacity: 0.9;
             font-size: 14px;
-            color: #a9b7d0;
         }
 
         .content {
-            padding: 25px;
+            padding: 20px;
         }
 
         .scanner-container {
             position: relative;
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
-            margin: 20px 0;
+            margin: 15px 0;
             background: #000;
-            min-height: 350px;
-            display: none;
+            height: 300px;
         }
 
         #reader {
             width: 100% !important;
-            min-height: 350px;
-            object-fit: cover;
+            height: 100% !important;
         }
 
         .scanner-overlay {
@@ -84,12 +80,12 @@
         }
 
         .focus-frame {
-            width: 85%;
-            height: 140px;
-            border: 3px solid #00ff88;
-            border-radius: 10px;
-            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.7),
-                        0 0 30px rgba(0, 255, 136, 0.6);
+            width: 80%;
+            height: 120px;
+            border: 3px solid #4CAF50;
+            border-radius: 8px;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5),
+                        0 0 20px rgba(76, 175, 80, 0.5);
             position: relative;
         }
 
@@ -98,12 +94,9 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, 
-                transparent 0%, 
-                #00ff88 50%, 
-                transparent 100%);
-            animation: scan 1.5s ease-in-out infinite;
+            height: 2px;
+            background: #4CAF50;
+            animation: scan 2s ease-in-out infinite;
         }
 
         @keyframes scan {
@@ -114,18 +107,16 @@
         .controls {
             display: flex;
             gap: 10px;
-            margin: 20px 0;
-            flex-wrap: wrap;
+            margin: 15px 0;
         }
 
         .btn {
             flex: 1;
-            min-width: 120px;
-            padding: 16px;
-            background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+            padding: 14px;
+            background: #4CAF50;
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
@@ -133,121 +124,57 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .btn:hover {
+            background: #45a049;
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(15, 52, 96, 0.3);
-        }
-
-        .btn-start {
-            background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%) !important;
         }
 
         .btn-stop {
-            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%) !important;
+            background: #f44336 !important;
         }
 
-        .btn-focus {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%) !important;
+        .btn-stop:hover {
+            background: #d32f2f !important;
         }
 
-        .btn-zoom {
-            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%) !important;
+        .btn-secondary {
+            background: #2196F3 !important;
         }
 
-        .focus-controls {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 15px 0;
-            display: none;
-        }
-
-        .slider-container {
-            margin: 10px 0;
-        }
-
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            color: #2c3e50;
-            font-size: 14px;
-        }
-
-        .slider {
-            width: 100%;
-            height: 8px;
-            -webkit-appearance: none;
-            appearance: none;
-            background: #dfe6e9;
-            border-radius: 4px;
-            outline: none;
-        }
-
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: #3498db;
-            cursor: pointer;
-            border: 3px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-
-        .slider::-moz-range-thumb {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: #3498db;
-            cursor: pointer;
-            border: 3px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        .btn-secondary:hover {
+            background: #1976D2 !important;
         }
 
         .status {
             text-align: center;
-            padding: 15px;
-            background: #ecf0f1;
-            border-radius: 10px;
-            margin: 15px 0;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 10px 0;
             font-size: 14px;
-            color: #2c3e50;
-            border-left: 4px solid #3498db;
+            color: #495057;
+            border-left: 4px solid #4CAF50;
         }
 
-        .status.scanning {
-            background: #d5f4e6;
-            color: #27ae60;
-            border-left-color: #27ae60;
-        }
-
-        .status.detected {
-            background: #d6eaf8;
-            color: #2980b9;
-            border-left-color: #2980b9;
-        }
-
-        .status.error {
-            background: #fadbd8;
-            color: #e74c3c;
-            border-left-color: #e74c3c;
+        .status.active {
+            background: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
         }
 
         .result {
             background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
             display: none;
-            border: 2px solid #e9ecef;
+            border: 1px solid #e9ecef;
         }
 
-        .result.active {
+        .result.show {
             display: block;
             animation: fadeIn 0.3s ease;
         }
@@ -258,13 +185,13 @@
         }
 
         .product-info {
-            margin-top: 15px;
+            margin-top: 10px;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 8px 0;
             border-bottom: 1px solid #dee2e6;
         }
 
@@ -274,106 +201,39 @@
 
         .info-label {
             font-weight: 600;
-            color: #2c3e50;
+            color: #495057;
         }
 
         .info-value {
-            color: #34495e;
+            color: #212529;
             text-align: right;
             max-width: 60%;
         }
 
         .product-image {
             width: 100%;
-            max-height: 180px;
+            max-height: 150px;
             object-fit: contain;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            background: white;
-            padding: 10px;
-            border: 1px solid #dee2e6;
-        }
-
-        .camera-info {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            z-index: 20;
-            display: none;
-        }
-
-        .control-buttons {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            z-index: 20;
-            display: flex;
-            gap: 10px;
-        }
-
-        .control-btn {
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .control-btn:hover {
-            background: rgba(52, 152, 219, 0.8);
-            transform: scale(1.1);
-        }
-
-        .tips {
-            background: #fff3cd;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            border-left: 4px solid #ffc107;
-        }
-
-        .tips h3 {
-            color: #856404;
+            border-radius: 6px;
             margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .tips ul {
-            padding-left: 20px;
-            margin: 0;
-            font-size: 13px;
-            color: #856404;
-        }
-
-        .tips li {
-            margin-bottom: 5px;
+            background: white;
+            padding: 5px;
         }
 
         .loading {
             text-align: center;
-            padding: 30px;
+            padding: 20px;
+            color: #495057;
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            margin: 0 auto 10px;
         }
 
         @keyframes spin {
@@ -381,89 +241,92 @@
             100% { transform: rotate(360deg); }
         }
 
-        .zoom-display {
+        .zoom-controls {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(0, 0, 0, 0.7);
+            bottom: 10px;
+            right: 10px;
+            z-index: 20;
+            background: rgba(0,0,0,0.7);
+            border-radius: 20px;
+            padding: 5px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .zoom-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .camera-status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
             color: white;
             padding: 5px 10px;
             border-radius: 15px;
             font-size: 12px;
             z-index: 20;
-            display: none;
+        }
+
+        .hint {
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 10px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 6px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 Scanner com Controle de Foco</h1>
-            <p>Controles manuais para melhor leitura • Câmera traseira fixa</p>
+            <h1>📦 Scanner de Códigos</h1>
+            <p>Câmera traseira • Leitura automática</p>
         </div>
 
         <div class="content">
-            <!-- Botão principal -->
-            <button class="btn btn-start" id="startBtn" onclick="startScanner()">
-                🎬 Iniciar Scanner
-            </button>
-
-            <!-- Container do scanner -->
-            <div class="scanner-container" id="scannerContainer">
+            <!-- Container do scanner (SEMPRE VISÍVEL) -->
+            <div class="scanner-container">
                 <div id="reader"></div>
                 <div class="scanner-overlay">
                     <div class="focus-frame">
                         <div class="scan-line"></div>
                     </div>
                 </div>
-                <div class="camera-info" id="cameraInfo"></div>
-                <div class="zoom-display" id="zoomDisplay">Zoom: 1.0x</div>
-                <div class="control-buttons">
-                    <button class="control-btn" id="torchBtn" onclick="toggleTorch()">🔦</button>
-                    <button class="control-btn" onclick="showFocusControls()">⚙️</button>
+                <div class="camera-status" id="cameraStatus">Desligada</div>
+                <div class="zoom-controls">
+                    <button class="zoom-btn" onclick="adjustZoom(-0.2)">-</button>
+                    <button class="zoom-btn" onclick="adjustZoom(0.2)">+</button>
                 </div>
             </div>
 
-            <!-- Controles de foco (ocultos inicialmente) -->
-            <div class="focus-controls" id="focusControls">
-                <h3 style="margin-bottom: 15px; color: #2c3e50;">🎯 Controles Manuais</h3>
-                
-                <div class="slider-container">
-                    <div class="slider-label">
-                        <span>Foco</span>
-                        <span id="focusValue">Automático</span>
-                    </div>
-                    <input type="range" min="0" max="100" value="50" class="slider" id="focusSlider">
-                </div>
-
-                <div class="slider-container">
-                    <div class="slider-label">
-                        <span>Zoom</span>
-                        <span id="zoomValue">1.0x</span>
-                    </div>
-                    <input type="range" min="100" max="300" value="100" class="slider" id="zoomSlider">
-                </div>
-
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button class="btn btn-focus" onclick="resetFocus()">
-                        🔄 Resetar Foco
-                    </button>
-                    <button class="btn btn-zoom" onclick="autoFocus()">
-                        🤖 Auto Foco
-                    </button>
-                </div>
-            </div>
-
-            <!-- Botões de controle -->
-            <div class="controls" id="mainControls" style="display: none;">
-                <button class="btn btn-stop" onclick="stopScanner()">
-                    ⏹️ Parar Scanner
+            <!-- Controles -->
+            <div class="controls">
+                <button class="btn" id="startBtn" onclick="startScanner()">
+                    ▶️ Iniciar Scanner
                 </button>
-                <button class="btn btn-focus" onclick="showFocusControls()">
-                    ⚙️ Ajustar Foco/Zoom
+                <button class="btn btn-stop" id="stopBtn" onclick="stopScanner()" style="display: none;">
+                    ⏹️ Parar
                 </button>
-                <button class="btn" onclick="testDetection()">
-                    🧪 Testar Detecção
+                <button class="btn btn-secondary" onclick="focusCamera()">
+                    🔍 Focar
                 </button>
             </div>
 
@@ -472,15 +335,9 @@
                 Clique em "Iniciar Scanner" para começar
             </div>
 
-            <!-- Dicas -->
-            <div class="tips">
-                <h3>💡 Dicas para melhor leitura:</h3>
-                <ul>
-                    <li>Use os controles de foco manual para códigos pequenos</li>
-                    <li>Aumente o zoom para códigos distantes</li>
-                    <li>Mantenha boa iluminação no código</li>
-                    <li>Use a lanterna (🔦) em ambientes escuros</li>
-                </ul>
+            <!-- Dica -->
+            <div class="hint">
+                💡 Dica: Para melhor leitura, aproxime o código da câmera
             </div>
 
             <!-- Resultado -->
@@ -494,40 +351,30 @@
         let isScanning = false;
         let cameraTrack = null;
         let currentZoom = 1.0;
-        let currentFocus = 'continuous';
         let detectionCount = 0;
-        let productCache = {};
 
-        // Iniciar scanner
+        // Iniciar scanner - SIMPLIFICADO
         async function startScanner() {
             if (isScanning) return;
             
             try {
-                const status = document.getElementById('status');
-                status.textContent = '🔄 Iniciando câmera traseira...';
-                status.className = 'status scanning';
+                // Atualizar status
+                updateStatus('🔄 Solicitando permissão da câmera...', 'active');
                 
-                // Mostrar elementos
+                // Mostrar botão de parar, esconder de iniciar
                 document.getElementById('startBtn').style.display = 'none';
-                document.getElementById('mainControls').style.display = 'flex';
-                document.getElementById('scannerContainer').style.display = 'block';
-                document.getElementById('cameraInfo').style.display = 'block';
-                document.getElementById('zoomDisplay').style.display = 'block';
+                document.getElementById('stopBtn').style.display = 'flex';
+                document.getElementById('cameraStatus').textContent = 'Ligando...';
                 
-                // Configuração do scanner
+                // Configuração SIMPLES
                 const config = {
-                    fps: 30,
+                    fps: 10, // Reduzido para melhor performance
                     qrbox: { 
-                        width: 280, 
-                        height: 160 
+                        width: 250, 
+                        height: 150 
                     },
-                    rememberLastUsedCamera: true,
-                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
-                        Html5QrcodeSupportedFormats.EAN_8,
-                        Html5QrcodeSupportedFormats.UPC_A,
-                        Html5QrcodeSupportedFormats.UPC_E,
                         Html5QrcodeSupportedFormats.CODE_128
                     ]
                 };
@@ -535,11 +382,11 @@
                 // Criar scanner
                 html5QrCode = new Html5Qrcode("reader");
                 
-                // Configuração da câmera (traseira fixa)
+                // Configuração SIMPLES da câmera
                 const cameraConfig = { 
                     facingMode: "environment",
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
+                    width: { min: 640, ideal: 1280 },
+                    height: { min: 480, ideal: 720 }
                 };
                 
                 // Iniciar scanner
@@ -550,163 +397,35 @@
                     onScanError
                 );
                 
-                // Obter track da câmera para controle manual
-                cameraTrack = await html5QrCode.getRunningTrack();
-                if (cameraTrack) {
-                    setupCameraControls(cameraTrack);
+                isScanning = true;
+                updateStatus('✅ Scanner ativo! Aponte para um código.', 'active');
+                document.getElementById('cameraStatus').textContent = 'Ativa';
+                
+                // Tentar obter track da câmera
+                try {
+                    cameraTrack = await html5QrCode.getRunningTrack();
+                } catch (e) {
+                    console.log('Não foi possível obter track da câmera:', e);
                 }
                 
-                isScanning = true;
-                status.textContent = '✅ Scanner ativo! Use os controles para ajustar o foco.';
-                
             } catch (error) {
-                console.error('Erro ao iniciar scanner:', error);
-                document.getElementById('status').className = 'status error';
-                document.getElementById('status').textContent = `❌ Erro: ${error.message}`;
+                console.error('Erro:', error);
+                updateStatus(`❌ Erro: ${error.message}`, 'error');
                 stopScanner();
             }
         }
 
-        // Configurar controles da câmera
-        function setupCameraControls(track) {
-            const capabilities = track.getCapabilities();
-            const settings = track.getSettings();
-            
-            // Mostrar informações da câmera
-            const cameraInfo = document.getElementById('cameraInfo');
-            cameraInfo.textContent = `📷 ${track.label || 'Câmera Traseira'}`;
-            
-            // Configurar slider de zoom se disponível
-            const zoomSlider = document.getElementById('zoomSlider');
-            const zoomValue = document.getElementById('zoomValue');
-            const zoomDisplay = document.getElementById('zoomDisplay');
-            
-            if (capabilities.zoom) {
-                zoomSlider.min = Math.round(capabilities.zoom.min * 100);
-                zoomSlider.max = Math.round(capabilities.zoom.max * 100);
-                zoomSlider.value = Math.round((settings.zoom || 1) * 100);
-                currentZoom = settings.zoom || 1.0;
-                
-                zoomValue.textContent = `${currentZoom.toFixed(1)}x`;
-                zoomDisplay.textContent = `Zoom: ${currentZoom.toFixed(1)}x`;
-                
-                zoomSlider.oninput = function() {
-                    currentZoom = this.value / 100;
-                    zoomValue.textContent = `${currentZoom.toFixed(1)}x`;
-                    zoomDisplay.textContent = `Zoom: ${currentZoom.toFixed(1)}x`;
-                    applyZoom(currentZoom);
-                };
-            } else {
-                zoomSlider.disabled = true;
-                zoomValue.textContent = "Não suportado";
-            }
-            
-            // Configurar slider de foco
-            const focusSlider = document.getElementById('focusSlider');
-            const focusValue = document.getElementById('focusValue');
-            
-            if (capabilities.focusMode && capabilities.focusMode.includes('manual')) {
-                focusSlider.disabled = false;
-                focusValue.textContent = "Manual";
-                currentFocus = 'manual';
-                
-                focusSlider.oninput = function() {
-                    const focusDistance = this.value / 100; // Normalizar para 0-1
-                    focusValue.textContent = `Manual (${this.value}%)`;
-                    applyFocus(focusDistance);
-                };
-            } else {
-                focusSlider.disabled = true;
-                focusValue.textContent = "Automático";
+        // Atualizar status
+        function updateStatus(message, type = '') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status';
+            if (type) {
+                status.classList.add(type);
             }
         }
 
-        // Aplicar zoom
-        async function applyZoom(zoomLevel) {
-            if (!cameraTrack || !cameraTrack.getCapabilities()) return;
-            
-            try {
-                await cameraTrack.applyConstraints({
-                    advanced: [{ zoom: zoomLevel }]
-                });
-            } catch (error) {
-                console.log('Erro ao aplicar zoom:', error);
-            }
-        }
-
-        // Aplicar foco manual
-        async function applyFocus(focusDistance) {
-            if (!cameraTrack || !cameraTrack.getCapabilities()) return;
-            
-            try {
-                await cameraTrack.applyConstraints({
-                    advanced: [
-                        { focusMode: 'manual' },
-                        { focusDistance: focusDistance }
-                    ]
-                });
-            } catch (error) {
-                console.log('Erro ao aplicar foco:', error);
-            }
-        }
-
-        // Resetar foco para automático
-        async function resetFocus() {
-            if (!cameraTrack) return;
-            
-            try {
-                await cameraTrack.applyConstraints({
-                    advanced: [{ focusMode: 'continuous' }]
-                });
-                
-                document.getElementById('focusValue').textContent = "Automático";
-                document.getElementById('focusSlider').value = 50;
-                currentFocus = 'continuous';
-                
-                document.getElementById('status').className = 'status scanning';
-                document.getElementById('status').textContent = '✅ Foco resetado para automático';
-            } catch (error) {
-                console.log('Erro ao resetar foco:', error);
-            }
-        }
-
-        // Tentar foco automático
-        async function autoFocus() {
-            if (!cameraTrack) return;
-            
-            try {
-                // Ciclar entre modos de foco
-                const capabilities = cameraTrack.getCapabilities();
-                if (capabilities.focusMode) {
-                    await cameraTrack.applyConstraints({
-                        advanced: [{ focusMode: 'continuous' }]
-                    });
-                    
-                    setTimeout(async () => {
-                        try {
-                            await cameraTrack.applyConstraints({
-                                advanced: [{ focusMode: 'single-shot' }]
-                            });
-                            
-                            document.getElementById('status').className = 'status scanning';
-                            document.getElementById('status').textContent = '✅ Foco automático aplicado';
-                        } catch (error) {
-                            console.log('Erro no foco single-shot:', error);
-                        }
-                    }, 500);
-                }
-            } catch (error) {
-                console.log('Erro no foco automático:', error);
-            }
-        }
-
-        // Mostrar controles de foco
-        function showFocusControls() {
-            const controls = document.getElementById('focusControls');
-            controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
-        }
-
-        // Detecção de código
+        // Sucesso na leitura
         function onScanSuccess(decodedText, decodedResult) {
             const code = decodedText.trim();
             
@@ -716,96 +435,98 @@
             detectionCount++;
             
             // Feedback visual
-            const status = document.getElementById('status');
-            status.className = 'status detected';
-            status.textContent = `✅ Detectado: ${code} (Total: ${detectionCount})`;
+            updateStatus(`✅ Detectado: ${code}`, 'active');
             
             // Efeito visual
             const focusFrame = document.querySelector('.focus-frame');
-            focusFrame.style.borderColor = '#e94560';
-            focusFrame.style.boxShadow = '0 0 0 1000px rgba(0, 0, 0, 0.7), 0 0 40px rgba(233, 69, 96, 0.8)';
-            
+            focusFrame.style.borderColor = '#2196F3';
             setTimeout(() => {
-                focusFrame.style.borderColor = '#00ff88';
-                focusFrame.style.boxShadow = '0 0 0 1000px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 255, 136, 0.6)';
+                focusFrame.style.borderColor = '#4CAF50';
             }, 300);
             
             // Buscar produto
-            if (!productCache[code]) {
-                searchProduct(code);
-            } else {
-                showCachedProduct(code);
-            }
+            searchProduct(code);
         }
 
         // Erro na leitura
         function onScanError(error) {
             // Ignorar erros comuns
             if (!error.includes("No MultiFormat Readers")) {
-                console.log('Erro de scan:', error);
+                console.log('Scan error:', error);
             }
         }
 
         // Parar scanner
         async function stopScanner() {
-            if (!isScanning) return;
+            if (!isScanning && !html5QrCode) return;
             
             try {
                 if (html5QrCode) {
                     await html5QrCode.stop();
                     html5QrCode.clear();
+                    html5QrCode = null;
                 }
             } catch (error) {
                 console.log('Erro ao parar:', error);
             }
             
+            // Resetar estado
             isScanning = false;
             cameraTrack = null;
             
-            // Esconder elementos
-            document.getElementById('startBtn').style.display = 'block';
-            document.getElementById('mainControls').style.display = 'none';
-            document.getElementById('scannerContainer').style.display = 'none';
-            document.getElementById('focusControls').style.display = 'none';
+            // Atualizar UI
+            document.getElementById('startBtn').style.display = 'flex';
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('cameraStatus').textContent = 'Desligada';
             
-            // Resetar status
-            document.getElementById('status').className = 'status';
-            document.getElementById('status').textContent = 'Scanner parado. Clique para iniciar novamente.';
+            updateStatus('Scanner parado. Clique para iniciar novamente.');
         }
 
-        // Alternar lanterna
-        async function toggleTorch() {
-            if (!cameraTrack) return;
+        // Ajustar zoom
+        async function adjustZoom(change) {
+            if (!cameraTrack || !isScanning) return;
             
             try {
-                const capabilities = cameraTrack.getCapabilities();
-                if (capabilities.torch) {
-                    const torchOn = !cameraTrack.getSettings().torch;
-                    await cameraTrack.applyConstraints({
-                        advanced: [{ torch: torchOn }]
-                    });
-                    
-                    const torchBtn = document.getElementById('torchBtn');
-                    torchBtn.textContent = torchOn ? '💡' : '🔦';
-                    
-                    document.getElementById('status').className = 'status';
-                    document.getElementById('status').textContent = torchOn ? '💡 Lanterna ligada' : '🔦 Lanterna desligada';
-                }
+                currentZoom = Math.max(1.0, Math.min(3.0, currentZoom + change));
+                
+                await cameraTrack.applyConstraints({
+                    advanced: [{ zoom: currentZoom }]
+                });
+                
+                updateStatus(`🔍 Zoom: ${currentZoom.toFixed(1)}x`, 'active');
             } catch (error) {
-                console.log('Lanterna não disponível:', error);
+                console.log('Zoom não suportado:', error);
             }
         }
 
-        // Testar detecção
-        function testDetection() {
-            const testCodes = [
-                '7891000315507', // Nescau
-                '7894900010015', // Coca-Cola
-                '7891910000197'  // Arroz
-            ];
+        // Forçar foco
+        async function focusCamera() {
+            if (!cameraTrack || !isScanning) return;
             
-            const randomCode = testCodes[Math.floor(Math.random() * testCodes.length)];
-            onScanSuccess(randomCode, {});
+            try {
+                // Tentar foco automático
+                await cameraTrack.applyConstraints({
+                    advanced: [{ focusMode: 'continuous' }]
+                });
+                
+                updateStatus('🔍 Focando...', 'active');
+                
+                // Tentar foco único após breve delay
+                setTimeout(async () => {
+                    try {
+                        await cameraTrack.applyConstraints({
+                            advanced: [{ focusMode: 'single-shot' }]
+                        });
+                        updateStatus('✅ Foco ajustado', 'active');
+                    } catch (e) {
+                        console.log('Foco single-shot não suportado:', e);
+                    }
+                }, 500);
+                
+            } catch (error) {
+                console.log('Erro no foco:', error);
+                updateStatus('⚠️ Foco automático não disponível', 'error');
+            }
         }
 
         // Buscar produto
@@ -814,13 +535,14 @@
             resultDiv.innerHTML = `
                 <div class="loading">
                     <div class="spinner"></div>
-                    <div style="margin-top: 10px; color: #2c3e50;">Buscando produto...</div>
-                    <div style="font-size: 12px; color: #7f8c8d;">${code}</div>
+                    <div>Buscando produto...</div>
+                    <div style="font-size: 12px; color: #6c757d; margin-top: 5px;">${code}</div>
                 </div>
             `;
-            resultDiv.classList.add('active');
+            resultDiv.classList.add('show');
             
             try {
+                // Usar proxy
                 const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
                 
@@ -835,20 +557,11 @@
                     return;
                 }
                 
-                productCache[code] = data.product;
                 showProductInfo(data.product, code);
                 
             } catch (error) {
                 console.error('Erro na busca:', error);
                 showProductError(code);
-            }
-        }
-
-        // Mostrar produto do cache
-        function showCachedProduct(code) {
-            const product = productCache[code];
-            if (product) {
-                showProductInfo(product, code);
             }
         }
 
@@ -876,19 +589,19 @@
                 ${imageHtml}
                 <div class="product-info">
                     <div class="info-row">
-                        <span class="info-label">📦 Código:</span>
+                        <span class="info-label">Código:</span>
                         <span class="info-value"><strong>${code}</strong></span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">🏷️ Produto:</span>
+                        <span class="info-label">Produto:</span>
                         <span class="info-value">${productName}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">🏭 Marca:</span>
+                        <span class="info-label">Marca:</span>
                         <span class="info-value">${product.brands || product.brand_owner || 'Não informada'}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">⚖️ Quantidade:</span>
+                        <span class="info-label">Quantidade:</span>
                         <span class="info-value">${product.quantity || product.product_quantity || 'Não informada'}</span>
                     </div>
                 </div>
@@ -901,12 +614,12 @@
             resultDiv.innerHTML = `
                 <div class="product-info">
                     <div class="info-row">
-                        <span class="info-label">📦 Código:</span>
+                        <span class="info-label">Código:</span>
                         <span class="info-value">${code}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">❌ Status:</span>
-                        <span class="info-value" style="color: #e74c3c;">Produto não encontrado</span>
+                        <span class="info-label">Status:</span>
+                        <span class="info-value" style="color: #f44336;">Produto não encontrado</span>
                     </div>
                 </div>
             `;
@@ -918,16 +631,19 @@
             resultDiv.innerHTML = `
                 <div class="product-info">
                     <div class="info-row">
-                        <span class="info-label">📦 Código:</span>
+                        <span class="info-label">Código:</span>
                         <span class="info-value">${code}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">⚠️ Erro:</span>
-                        <span class="info-value" style="color: #f39c12;">Falha na conexão</span>
+                        <span class="info-label">Status:</span>
+                        <span class="info-value" style="color: #ff9800;">Erro na conexão</span>
                     </div>
                 </div>
             `;
         }
+
+        // Iniciar automaticamente? (descomente se quiser)
+        // window.addEventListener('load', startScanner);
     </script>
 </body>
 </html>
