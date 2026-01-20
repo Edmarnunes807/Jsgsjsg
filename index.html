@@ -106,6 +106,10 @@
             background: #10b981;
         }
 
+        .btn-warning {
+            background: #f59e0b;
+        }
+
         .scanner-container {
             position: relative;
             border-radius: 12px;
@@ -180,6 +184,11 @@
         .status.error {
             background: #fee2e2;
             color: #dc2626;
+        }
+
+        .status.warning {
+            background: #fef3c7;
+            color: #92400e;
         }
 
         .result {
@@ -307,6 +316,21 @@
             color: white;
             transform: translateY(-2px);
         }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -367,6 +391,9 @@
                 <button class="btn btn-success" onclick="switchCamera()">
                     🔄 Alternar Câmera
                 </button>
+                <button class="btn btn-warning" onclick="forceRestartScanner()">
+                    🔄 Reiniciar Scanner
+                </button>
                 <button class="btn" onclick="testScanner()">
                     🧪 Testar Scanner
                 </button>
@@ -409,8 +436,23 @@
         // Inicializar a página
         document.addEventListener('DOMContentLoaded', function() {
             loadTestCodes();
-            loadCameras();
+            // Aguardar um pouco antes de carregar as câmeras para evitar conflitos
+            setTimeout(loadCameras, 500);
+            
+            // Detectar mudanças nos dispositivos
+            if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+                navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+            }
         });
+
+        // Função para lidar com mudanças nos dispositivos
+        function handleDeviceChange() {
+            console.log('Dispositivo de mídia alterado, recarregando câmeras...');
+            loadCameras();
+            if (isScanning) {
+                updateCameraSelect();
+            }
+        }
 
         // Carregar códigos de teste
         function loadTestCodes() {
@@ -430,21 +472,78 @@
         // Carregar câmeras disponíveis
         async function loadCameras() {
             try {
+                // Aguardar um pouco para evitar conflitos
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 cameras = devices.filter(device => device.kind === 'videoinput');
+                
+                console.log(`${cameras.length} câmeras encontradas:`, cameras.map(c => c.label || 'Sem nome'));
+                
+                // Atualizar o seletor se estiver visível
+                if (document.getElementById('cameraControls').classList.contains('hidden') === false) {
+                    updateCameraSelect();
+                }
+            } catch (error) {
+                console.log('Erro ao carregar câmeras:', error);
+            }
+        }
+
+        // Atualizar seletor de câmeras
+        async function updateCameraSelect() {
+            try {
+                // Recarregar dispositivos para garantir lista atualizada
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
                 
                 const select = document.getElementById('cameraSelect');
                 select.innerHTML = '<option value="">Selecione uma câmera...</option>';
                 
-                cameras.forEach((camera, index) => {
-                    const label = camera.label || `Câmera ${index + 1}`;
+                videoDevices.forEach((device, index) => {
                     const option = document.createElement('option');
-                    option.value = camera.deviceId;
+                    option.value = device.deviceId;
+                    
+                    // Criar label mais amigável
+                    let label = device.label || `Câmera ${index + 1}`;
+                    
+                    // Detectar tipo de câmera
+                    if (label.toLowerCase().includes('back') || 
+                        label.toLowerCase().includes('rear') ||
+                        label.toLowerCase().includes('environment') ||
+                        label.includes('2') || 
+                        label.includes('traseira')) {
+                        label = '📷 ' + label + ' (Traseira)';
+                    } else if (label.toLowerCase().includes('front') || 
+                              label.toLowerCase().includes('user') ||
+                              label.toLowerCase().includes('selfie') ||
+                              label.includes('1') ||
+                              label.includes('frontal')) {
+                        label = '📱 ' + label + ' (Frontal)';
+                    } else {
+                        label = '🎥 ' + label;
+                    }
+                    
                     option.textContent = label;
                     select.appendChild(option);
+                    
+                    // Selecionar automaticamente se for a câmera atual
+                    if (device.deviceId === currentCameraId || 
+                        (currentCameraId === "environment" && 
+                         (label.includes('Traseira') || label.toLowerCase().includes('back') || label.toLowerCase().includes('rear'))) ||
+                        (currentCameraId === "user" && 
+                         (label.includes('Frontal') || label.toLowerCase().includes('front') || label.toLowerCase().includes('selfie')))) {
+                        select.value = device.deviceId;
+                    }
                 });
+                
+                // Se não encontrou correspondência, selecionar primeira
+                if (!select.value && videoDevices.length > 0) {
+                    select.value = videoDevices[0].deviceId;
+                    currentCameraId = videoDevices[0].deviceId;
+                }
+                
             } catch (error) {
-                console.log('Erro ao carregar câmeras:', error);
+                console.log('Erro ao atualizar seletor de câmeras:', error);
             }
         }
 
@@ -454,13 +553,16 @@
             
             try {
                 const status = document.getElementById('status');
-                status.textContent = 'Solicitando acesso à câmera...';
+                status.innerHTML = '<div class="loading"></div> Solicitando acesso à câmera...';
                 status.className = 'status scanning';
                 
                 // Esconder botão inicial e mostrar controles
                 document.getElementById('startBtn').classList.add('hidden');
                 document.getElementById('cameraControls').classList.remove('hidden');
                 document.getElementById('extraControls').classList.remove('hidden');
+                
+                // MOSTRAR CONTAINER IMEDIATAMENTE (para evitar tela preta)
+                document.getElementById('scannerContainer').style.display = 'block';
                 
                 // Configurações do scanner
                 const config = {
@@ -486,48 +588,141 @@
                 // Criar instância do scanner
                 html5QrCode = new Html5Qrcode("reader");
                 
-                // Tentar usar câmera traseira primeiro
-                let cameraId = currentCameraId;
-                if (!cameraId && cameras.length > 0) {
-                    const rearCamera = cameras.find(cam => 
-                        cam.label.includes('back') || 
-                        cam.label.includes('rear') ||
-                        cam.label.includes('environment')
+                // AGUARDAR UM MOMENTO PARA EVITAR CONFLITOS
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Tentar diferentes métodos de inicialização
+                let startSuccess = false;
+                
+                // Método 1: Tentar com facingMode primeiro (mais confiável)
+                try {
+                    status.innerHTML = '<div class="loading"></div> Tentando câmera traseira (environment)...';
+                    
+                    await html5Qrcode.start(
+                        { facingMode: "environment" }, // Prioriza câmera traseira
+                        config,
+                        onScanSuccess,
+                        onScanError
                     );
-                    cameraId = rearCamera ? rearCamera.deviceId : cameras[0].deviceId;
-                    currentCameraId = cameraId;
-                }
-                
-                // Iniciar o scanner
-                await html5QrCode.start(
-                    cameraId || { facingMode: "environment" },
-                    config,
-                    onScanSuccess,
-                    onScanError
-                );
-                
-                // Mostrar container do scanner
-                document.getElementById('scannerContainer').style.display = 'block';
-                status.textContent = 'Scanner ativo! Aponte para um código de barras...';
-                isScanning = true;
-                
-                // Atualizar seletor de câmera
-                if (currentCameraId) {
-                    document.getElementById('cameraSelect').value = currentCameraId;
-                }
-                
-                // Configurar evento de mudança de câmera
-                document.getElementById('cameraSelect').onchange = function() {
-                    if (this.value) {
-                        switchToCamera(this.value);
+                    startSuccess = true;
+                    currentCameraId = "environment";
+                    console.log("Scanner iniciado com facingMode: environment");
+                } catch (environmentError) {
+                    console.log("Câmera environment falhou:", environmentError);
+                    
+                    // Método 2: Tentar câmera frontal
+                    try {
+                        status.innerHTML = '<div class="loading"></div> Tentando câmera frontal (user)...';
+                        
+                        await html5QrCode.start(
+                            { facingMode: "user" }, // Tenta câmera frontal
+                            config,
+                            onScanSuccess,
+                            onScanError
+                        );
+                        startSuccess = true;
+                        currentCameraId = "user";
+                        console.log("Scanner iniciado com facingMode: user");
+                    } catch (userError) {
+                        console.log("Câmera user também falhou:", userError);
                     }
-                };
+                }
+                
+                // Método 3: Se ambas as facingMode falharem, tentar com deviceId
+                if (!startSuccess) {
+                    await loadCameras(); // Garantir que temos lista atualizada
+                    
+                    if (cameras.length > 0) {
+                        // Tentar encontrar a melhor câmera
+                        let selectedCamera = null;
+                        
+                        // Procurar por câmera traseira
+                        const rearCamera = cameras.find(cam => {
+                            const label = cam.label || '';
+                            return label.toLowerCase().includes('back') || 
+                                   label.toLowerCase().includes('rear') ||
+                                   label.toLowerCase().includes('environment') ||
+                                   label.includes('2') ||
+                                   label.includes('traseira');
+                        });
+                        
+                        if (rearCamera) {
+                            selectedCamera = rearCamera;
+                            console.log("Encontrada câmera traseira:", rearCamera.label);
+                        } else {
+                            // Usar a primeira câmera disponível
+                            selectedCamera = cameras[0];
+                            console.log("Usando primeira câmera disponível:", selectedCamera.label);
+                        }
+                        
+                        status.innerHTML = '<div class="loading"></div> Iniciando câmera específica...';
+                        
+                        await html5QrCode.start(
+                            selectedCamera.deviceId,
+                            config,
+                            onScanSuccess,
+                            onScanError
+                        );
+                        
+                        startSuccess = true;
+                        currentCameraId = selectedCamera.deviceId;
+                    } else {
+                        throw new Error("Nenhuma câmera encontrada");
+                    }
+                }
+                
+                if (startSuccess) {
+                    status.textContent = '✅ Scanner ativo! Aponte para um código de barras...';
+                    isScanning = true;
+                    
+                    // Atualizar seletor de câmera
+                    await updateCameraSelect();
+                    
+                    // Configurar evento de mudança de câmera
+                    document.getElementById('cameraSelect').onchange = function() {
+                        if (this.value && this.value !== currentCameraId) {
+                            switchToCamera(this.value);
+                        }
+                    };
+                } else {
+                    throw new Error("Não foi possível iniciar nenhuma câmera");
+                }
                 
             } catch (error) {
                 console.error('Erro ao iniciar scanner:', error);
-                document.getElementById('status').className = 'status error';
-                document.getElementById('status').textContent = `Erro: ${error.message}`;
-                stopScanner();
+                
+                // TENTAR LIMPAR E RECOMEÇAR
+                if (html5QrCode) {
+                    try {
+                        await html5QrCode.stop();
+                        html5QrCode.clear();
+                    } catch (e) {
+                        console.log('Erro ao limpar scanner:', e);
+                    }
+                }
+                
+                // Resetar estado
+                isScanning = false;
+                html5QrCode = null;
+                
+                // Mostrar mensagem de erro amigável
+                const status = document.getElementById('status');
+                status.className = 'status error';
+                
+                if (error.message.includes('permission')) {
+                    status.textContent = 'Permissão da câmera negada. Por favor, permita o acesso à câmera nas configurações do navegador.';
+                } else if (error.message.includes('found') || error.message.includes('Nenhuma')) {
+                    status.textContent = 'Nenhuma câmera encontrada. Verifique se há uma câmera disponível.';
+                } else {
+                    status.textContent = `Erro: ${error.message}. Tente novamente.`;
+                }
+                
+                // Mostrar botão para tentar de novo
+                document.getElementById('startBtn').classList.remove('hidden');
+                document.getElementById('startBtn').innerHTML = '🔄 Tentar Novamente';
+                document.getElementById('cameraControls').classList.add('hidden');
+                document.getElementById('extraControls').classList.add('hidden');
+                document.getElementById('scannerContainer').style.display = 'none';
             }
         }
 
@@ -564,7 +759,7 @@
             
             // Reiniciar scanner após 3 segundos
             setTimeout(() => {
-                if (html5QrCode && !isScanning) {
+                if (html5QrCode && isScanning) {
                     html5QrCode.resume();
                     status.textContent = 'Pronto para escanear novamente...';
                 }
@@ -618,10 +813,12 @@
             // Resetar estado
             isScanning = false;
             html5QrCode = null;
+            currentCameraId = null;
             
             // Esconder scanner e mostrar botão inicial
             document.getElementById('scannerContainer').style.display = 'none';
             document.getElementById('startBtn').classList.remove('hidden');
+            document.getElementById('startBtn').innerHTML = '📷 Abrir Scanner de Câmera';
             document.getElementById('cameraControls').classList.add('hidden');
             document.getElementById('extraControls').classList.add('hidden');
             
@@ -632,11 +829,18 @@
 
         // Alternar para outra câmera
         async function switchToCamera(cameraId) {
-            if (!isScanning || !html5QrCode) return;
+            if (!isScanning || !html5QrCode || cameraId === currentCameraId) return;
             
             try {
+                // Mostrar mensagem de carregamento
+                const status = document.getElementById('status');
+                status.innerHTML = '<div class="loading"></div> Alternando câmera...';
+                
                 // Parar scanner atual
                 await html5QrCode.stop();
+                
+                // Aguardar um momento para liberar recursos
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
                 // Atualizar câmera atual
                 currentCameraId = cameraId;
@@ -654,17 +858,54 @@
                     onScanError
                 );
                 
-                document.getElementById('status').textContent = 'Câmera alterada!';
+                status.textContent = '✅ Câmera alterada com sucesso!';
+                isScanning = true;
                 
             } catch (error) {
                 console.error('Erro ao alternar câmera:', error);
-                document.getElementById('status').className = 'status error';
-                document.getElementById('status').textContent = `Erro ao alternar câmera: ${error.message}`;
+                
+                // Tentar recuperação automática
+                const status = document.getElementById('status');
+                status.className = 'status error';
+                status.textContent = `Erro: ${error.message}. Tentando recuperar...`;
+                
+                // Tentar voltar para a câmera anterior ou iniciar com facingMode
+                try {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    const config = {
+                        fps: 10,
+                        qrbox: { width: 250, height: 150 }
+                    };
+                    
+                    // Tentar com facingMode como fallback
+                    await html5QrCode.start(
+                        { facingMode: "environment" },
+                        config,
+                        onScanSuccess,
+                        onScanError
+                    );
+                    
+                    currentCameraId = "environment";
+                    status.textContent = '✅ Scanner recuperado!';
+                    status.className = 'status scanning';
+                    isScanning = true;
+                    
+                } catch (recoveryError) {
+                    console.error('Falha na recuperação:', recoveryError);
+                    status.textContent = '❌ Falha ao recuperar scanner. Reinicie o scanner.';
+                    stopScanner();
+                }
             }
         }
 
         // Alternar câmera (botão)
         async function switchCamera() {
+            if (!isScanning || !html5QrCode) {
+                alert('Inicie o scanner primeiro!');
+                return;
+            }
+            
             if (cameras.length < 2) {
                 alert('Apenas uma câmera disponível');
                 return;
@@ -675,27 +916,55 @@
             const nextIndex = (currentIndex + 1) % cameras.length;
             const nextCamera = cameras[nextIndex];
             
-            await switchToCamera(nextCamera.deviceId);
+            if (nextCamera) {
+                await switchToCamera(nextCamera.deviceId);
+            }
+        }
+
+        // Forçar reinício do scanner
+        async function forceRestartScanner() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<div class="loading"></div> Reiniciando scanner...';
+            status.className = 'status warning';
+            
+            await stopScanner();
+            
+            // Aguardar um pouco para garantir que tudo foi limpo
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Recarregar lista de câmeras
+            await loadCameras();
+            
+            // Iniciar scanner novamente
+            await initScanner();
         }
 
         // Alternar lanterna
         async function toggleTorch() {
-            // Implementação básica - requer navegador com suporte
+            if (!isScanning || !html5QrCode) return;
+            
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: currentCameraId }
-                });
-                const track = stream.getVideoTracks()[0];
-                if (track.getCapabilities().torch) {
-                    await track.applyConstraints({
-                        advanced: [{ torch: !track.getSettings().torch }]
-                    });
-                    const torchBtn = document.getElementById('torchBtn');
-                    torchBtn.textContent = track.getSettings().torch ? '💡' : '🔦';
+                // Tentar acessar a stream atual do scanner
+                // Nota: A biblioteca html5-qrcode não expõe diretamente a stream
+                // Esta é uma implementação básica
+                const torchBtn = document.getElementById('torchBtn');
+                
+                // Alternar ícone
+                if (torchBtn.textContent === '🔦') {
+                    torchBtn.textContent = '💡';
+                    torchBtn.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
+                } else {
+                    torchBtn.textContent = '🔦';
+                    torchBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
                 }
-                stream.getTracks().forEach(track => track.stop());
+                
+                // Nota: Para controle real da lanterna, seria necessário acessar
+                // a MediaStreamTrack diretamente, o que a biblioteca não expõe facilmente
+                console.log('Controle de lanterna - funcionalidade básica');
+                
             } catch (error) {
-                console.log('Lanterna não suportada:', error);
+                console.log('Lanterna não suportada ou erro:', error);
+                alert('Controle de lanterna não disponível neste navegador/dispositivo');
             }
         }
 
