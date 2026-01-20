@@ -24,12 +24,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Verificar status da API
     checkAPIStatus();
-    
-    // Remover sistema de tabs se existir
-    const tabContainers = document.querySelectorAll('.tab-container, .tab');
-    if (tabContainers.length > 0) {
-        tabContainers.forEach(el => el.style.display = 'none');
-    }
 });
 
 // ========== FUNÇÕES DO SCANNER ==========
@@ -42,9 +36,13 @@ async function initScanner() {
         // Mostrar interface do scanner
         const scannerContainer = document.getElementById('scannerContainer');
         const startBtn = document.getElementById('startBtn');
+        const cameraInfo = document.getElementById('cameraInfo');
+        const cameraControls = document.getElementById('cameraControls');
         
         if (scannerContainer) scannerContainer.style.display = 'block';
         if (startBtn) startBtn.style.display = 'none';
+        if (cameraInfo) cameraInfo.classList.remove('hidden');
+        if (cameraControls) cameraControls.classList.remove('hidden');
         
         const config = {
             fps: 30,
@@ -177,9 +175,13 @@ async function handleScannerError(error) {
     
     const startBtn = document.getElementById('startBtn');
     const scannerContainer = document.getElementById('scannerContainer');
+    const cameraInfo = document.getElementById('cameraInfo');
+    const cameraControls = document.getElementById('cameraControls');
     
     if (startBtn) startBtn.style.display = 'inline-block';
     if (scannerContainer) scannerContainer.style.display = 'none';
+    if (cameraInfo) cameraInfo.classList.add('hidden');
+    if (cameraControls) cameraControls.classList.add('hidden');
     
     if (error.message && error.message.includes('permission')) {
         updateStatus('Permissão da câmera negada.', 'error');
@@ -212,9 +214,13 @@ async function stopScanner() {
     
     const scannerContainer = document.getElementById('scannerContainer');
     const startBtn = document.getElementById('startBtn');
+    const cameraInfo = document.getElementById('cameraInfo');
+    const cameraControls = document.getElementById('cameraControls');
     
     if (scannerContainer) scannerContainer.style.display = 'none';
     if (startBtn) startBtn.style.display = 'inline-block';
+    if (cameraInfo) cameraInfo.classList.add('hidden');
+    if (cameraControls) cameraControls.classList.add('hidden');
     
     updateStatus('Scanner parado.', 'default');
 }
@@ -235,17 +241,28 @@ function onScanSuccess(decodedText, decodedResult) {
     // PARAR O SCANNER IMEDIATAMENTE
     if (html5QrCode) {
         html5QrCode.pause();
+        setTimeout(() => {
+            if (html5QrCode && isScanning) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    isScanning = false;
+                    
+                    // Fechar a visualização da câmera
+                    const scannerContainer = document.getElementById('scannerContainer');
+                    const startBtn = document.getElementById('startBtn');
+                    const cameraInfo = document.getElementById('cameraInfo');
+                    const cameraControls = document.getElementById('cameraControls');
+                    
+                    if (scannerContainer) scannerContainer.style.display = 'none';
+                    if (startBtn) startBtn.style.display = 'inline-block';
+                    if (cameraInfo) cameraInfo.classList.add('hidden');
+                    if (cameraControls) cameraControls.classList.add('hidden');
+                });
+            }
+        }, 100);
     }
     
     document.getElementById('manualCode').value = code;
-    
-    // Fechar a visualização da câmera
-    const scannerContainer = document.getElementById('scannerContainer');
-    const startBtn = document.getElementById('startBtn');
-    if (scannerContainer) scannerContainer.style.display = 'none';
-    if (startBtn) startBtn.style.display = 'inline-block';
-    
-    isScanning = false;
     
     // Buscar o produto
     searchProduct(code);
@@ -747,10 +764,11 @@ function displayProductsList(products) {
     let productsHtml = `
         <div class="products-header">
             <h3><i class="fas fa-boxes"></i> Produtos no Banco (${products.length})</h3>
-            <button class="btn btn-small btn-primary" onclick="showAllProducts()" style="margin: 0 0 15px 0;">
+            <button class="btn btn-small btn-primary" onclick="showAllProducts()" style="margin: 0;">
                 <i class="fas fa-sync-alt"></i> Atualizar
             </button>
         </div>
+        <div class="products-list-container">
     `;
     
     // Criar uma linha para cada produto
@@ -763,6 +781,8 @@ function displayProductsList(products) {
             `<span class="product-list-price">R$ ${product.preco}</span>` :
             `<span class="product-list-price na">N/A</span>`;
         
+        let marcaHtml = product.marca ? product.marca : 'Sem marca';
+        
         productsHtml += `
             <div class="product-list-item" data-linha="${product.linha || ''}">
                 <div class="product-list-image-container">
@@ -772,7 +792,7 @@ function displayProductsList(products) {
                     <div class="product-list-name">${product.nome}</div>
                     <div class="product-list-ean">EAN: ${product.ean}</div>
                 </div>
-                <div class="product-list-brand">${product.marca || 'Sem marca'}</div>
+                <div class="product-list-brand">${marcaHtml}</div>
                 <div class="product-list-price-container">
                     ${priceHtml}
                 </div>
@@ -788,12 +808,9 @@ function displayProductsList(products) {
         `;
     });
     
-    resultDiv.innerHTML = `
-        <div class="products-list-container">
-            ${productsHtml}
-        </div>
-    `;
+    productsHtml += `</div>`;
     
+    resultDiv.innerHTML = productsHtml;
     resultDiv.classList.add('active');
 }
 
@@ -807,9 +824,14 @@ function showNoProductsMessage() {
             </div>
             <h3>Banco de dados vazio</h3>
             <p>Nenhum produto cadastrado no banco local.</p>
-            <button class="btn btn-primary" onclick="searchManual()">
-                <i class="fas fa-plus"></i> Adicionar Primeiro Produto
-            </button>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="searchManual()">
+                    <i class="fas fa-plus"></i> Adicionar Primeiro Produto
+                </button>
+                <button class="btn btn-secondary" onclick="initScanner()">
+                    <i class="fas fa-camera"></i> Escanear Produto
+                </button>
+            </div>
         </div>
     `;
     
@@ -827,10 +849,11 @@ function openEditModal(ean, nome, marca, imagem, preco, linha) {
     document.getElementById('editPreco').value = decodeURIComponent(preco);
     
     // Atualizar título do modal
-    document.querySelector('#editModal .modal-header h3').innerHTML = '<i class="fas fa-edit"></i> Editar Produto';
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Produto';
     
-    document.getElementById('editModal').classList.remove('hidden');
-    document.getElementById('editModal').classList.add('active');
+    const modal = document.getElementById('editModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('active');
 }
 
 function openEditModalForNewProduct(ean, nome, marca, imagem, preco, source) {
@@ -843,10 +866,11 @@ function openEditModalForNewProduct(ean, nome, marca, imagem, preco, source) {
     document.getElementById('editPreco').value = decodeURIComponent(preco);
     
     // Atualizar título do modal
-    document.querySelector('#editModal .modal-header h3').innerHTML = '<i class="fas fa-plus-circle"></i> Cadastrar Novo Produto';
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Cadastrar Novo Produto';
     
-    document.getElementById('editModal').classList.remove('hidden');
-    document.getElementById('editModal').classList.add('active');
+    const modal = document.getElementById('editModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('active');
 }
 
 function openManualAddModal(code) {
@@ -859,15 +883,20 @@ function openManualAddModal(code) {
     document.getElementById('editPreco').value = '';
     
     // Atualizar título do modal
-    document.querySelector('#editModal .modal-header h3').innerHTML = '<i class="fas fa-plus-circle"></i> Cadastrar Novo Produto';
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Cadastrar Novo Produto';
     
-    document.getElementById('editModal').classList.remove('hidden');
-    document.getElementById('editModal').classList.add('active');
+    const modal = document.getElementById('editModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('active');
 }
 
 function closeModal() {
-    document.getElementById('editModal').classList.remove('active');
-    document.getElementById('editModal').classList.add('hidden');
+    const modal = document.getElementById('editModal');
+    modal.classList.remove('active');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+    
     currentProduct = null;
     currentModalType = 'edit';
 }
@@ -1045,9 +1074,15 @@ function showAlert(message, type = 'info') {
 }
 
 function checkAPIStatus() {
+    const apiStatus = document.getElementById('apiStatus');
     if (!GOOGLE_SHEETS_API) {
         console.warn("URL do Google Sheets não configurada");
+        apiStatus.textContent = "Não configurado";
+        apiStatus.style.color = "#ef4444";
         updateStatus('⚠️ Configure a URL do Google Sheets API!', 'warning');
+    } else {
+        apiStatus.textContent = "Conectado";
+        apiStatus.style.color = "#10b981";
     }
 }
 
